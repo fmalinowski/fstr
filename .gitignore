@@ -31,5 +31,8 @@
 # Debug files
 *.dSYM/
 
+# Binaries
+bin/
+
 # MAC OS files
 .DS_Store
