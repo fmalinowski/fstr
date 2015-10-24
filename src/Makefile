@@ -14,6 +14,7 @@ TARGET = fstr
 $(TARGET): $(OBJS)
 	mkdir -p $(BIN_DIR)
 	$(CC) -o $(BIN_DIR)/$@ $^ $(CFLAGS)
+	rm -f $^
 
 .PHONY: clean
 
