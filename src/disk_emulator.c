@@ -52,6 +52,7 @@ int write_block(int block_id, void* buffer, int nbytes) {
 	
 	if(nbytes > DATA_BLOCK_SIZE) {
 		// Data too big for a block
+		// TODO: Throw a warning?
 		nbytes = DATA_BLOCK_SIZE;
 	}
 
