@@ -1,11 +1,18 @@
-CC = gcc -Wall
-CFLAGS = `pkg-config fuse --cflags --libs`
-SRC_DIR = src
-BIN_DIR = bin
+SRC_DIRS=src
 
-all:
-	mkdir -p $(BIN_DIR)
-	$(CC) $(SRC_DIR)/fstr.c $(CFLAGS) -o $(BIN_DIR)/fstr
+MAKE_DIRS = $(SRC_DIRS)
+
+
+all: multimake 
+
+multimake:
+	@for d in $(MAKE_DIRS);  \
+	do          \
+		make -C $$d;    \
+	done;       \
 
 clean:
-	rm -rf $(BIN_DIR)
+	@for d in $(MAKE_DIRS); \
+	do          \
+		make -C $$d clean;  \
+	done;           \

@@ -1,6 +1,6 @@
 #ifndef BLOCKS_HANDLER
 #define BLOCKS_HANDLER
-
+/*
 #include <time.h>
 
 #define INODE_LIST_SIZE 1024 // WE NEED TO FIGURE OUT THIS NUMBER
@@ -17,10 +17,10 @@ struct superbock {
 	int * data_block_locks;
 };
 
-enum File_Type {
+typedef enum {
 	ordinary,
 	directory
-};
+} File_Type;
 
 struct inode {
 	int inode_id;
@@ -41,7 +41,8 @@ struct data_block {
 	int data_block_id;
 	char block[DATA_BLOCK_SIZE];
 	struct data_block * next;
-}
+};
+
 
 int make_fs(void);
 struct inode * ialloc(void);	// allocate an inode
@@ -53,5 +54,6 @@ struct data_block * data_block_alloc(); // Will make calls to bread, brelse, get
 struct data_block * bread(int data_block_nb); // Read the data block
 int bwrite(struct data_block *); // Write the data block
 int data_block_free(struct data_block *);
+*/
 
 #endif

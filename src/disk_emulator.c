@@ -1,42 +1,44 @@
-#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include "constants.h"
 #include "disk_emulator.h"
 
-static char * disk;
-static int block_size;
-static int inode_block_nb;
-static int data_block_nb;
+static void** BLOCK_DATA;
 
-int allocate_disk(int blck_size, int inode_blck_nb, int data_blck_nb) {
-	block_size = blck_size;
-	inode_block_nb = inode_blck_nb;
-	data_block_nb = data_blck_nb;
-
-	disk = (char *) malloc((inode_block_nb + data_block_nb + 1) * block_size * sizeof(char));
-	if (disk) {
-		return 0;
-	}
-	return -1;
-}
-
-void unallocate_disk() {
-	if (disk) {
-		free(disk);
+void init() {
+	if(BLOCK_DATA == NULL) {
+		BLOCK_DATA = malloc(sizeof(void*)*TOTAL_BLOCKS);
 	}
 }
 
-int write_block(int block_id, char * buffer) {
-	if ((block_id >= 0) && (block_id <= (inode_block_nb + data_block_nb)) {
-		memcpy(disk + block_id, buffer, block_size);
-		return 0;
+int read_block(int block_id, void** target) {
+	init();
+
+	void *p = BLOCK_DATA[block_id];
+
+	if(p == NULL) {
+		// No data found
+		return -1;
 	}
-	return -1;
+
+	*target = p;
+
+	// Success
+	return 0;
 }
 
-int read_block(int block_id, char * buffer) {
-	if ((block_id >= 0) && (block_id <= (inode_block_nb + data_block_nb)) {
-		memcpy(buffer, disk + block_id, block_size);
-		return 0;
+int write_block(int block_id, void* buffer) {
+	init();
+
+	void *p = BLOCK_DATA[block_id];
+
+	if(p != NULL) {
+		free(p);
 	}
-	return -1;
+
+	p = malloc(sizeof(void*) * DATA_BLOCK_SIZE);
+	memcpy(p, buffer, DATA_BLOCK_SIZE);
+
+	// Success
+	return 0;
 }
