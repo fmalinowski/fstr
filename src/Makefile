@@ -7,16 +7,15 @@ CFLAGS = `pkg-config fuse --cflags --libs`
 # define sources
 SRCS = fstr.c blocks_handler.c disk_emulator.c
 
-BUILD_DIR = ../build
-OBJ_DIR = $(BUILD_DIR)/obj
-BIN_DIR = $(BUILD_DIR)/bin
+BIN_DIR = ../bin
 OBJS = $(SRCS:.c=.o)
 TARGET = fstr
 
 $(TARGET): $(OBJS)
-	$(CC) -o $@ $^ $(CFLAGS)
+	mkdir -p $(BIN_DIR)
+	$(CC) -o $(BIN_DIR)/$@ $^ $(CFLAGS)
 
 .PHONY: clean
 
 clean:
-	rm -f $(TARGET) $(OBJS) core
+	rm -rf $(BIN_DIR)
