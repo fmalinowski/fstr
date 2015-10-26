@@ -46,6 +46,9 @@ int write_block(int block_id, void * buffer, size_t buffer_size) {
 
 		size_t copy_size = buffer_size < DATA_BLOCK_SIZE ? buffer_size : DATA_BLOCK_SIZE;
 		memcpy(block_data[block_id], buffer, copy_size);
+		if(copy_size < DATA_BLOCK_SIZE) {
+			memset(block_data[block_id] + copy_size, 0, DATA_BLOCK_SIZE - copy_size);
+		}
 		return 0;
 	}
 	return -1;
