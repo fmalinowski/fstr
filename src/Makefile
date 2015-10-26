@@ -18,4 +18,4 @@ $(TARGET): $(OBJS)
 .PHONY: clean
 
 clean:
-	rm -rf $(BIN_DIR)
+	rm -rf $(OBJS) $(BIN_DIR)
