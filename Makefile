@@ -1,6 +1,7 @@
 SRC_DIRS=src
+TEST_DIRS=tests
 
-MAKE_DIRS = $(SRC_DIRS)
+MAKE_DIRS = $(SRC_DIRS) $(TEST_DIRS)
 
 
 all: multimake 

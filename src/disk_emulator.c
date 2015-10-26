@@ -1,44 +1,56 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "constants.h"
 #include "disk_emulator.h"
 
-static void** BLOCK_DATA;
+static char ** block_data;
 
-void init() {
-	if(BLOCK_DATA == NULL) {
-		BLOCK_DATA = malloc(sizeof(void*)*TOTAL_BLOCKS);
+int init_disk_emulator(void) {
+	if (block_data) {
+		return -1; // Disk already allocated
+	}
+
+	block_data = malloc(TOTAL_BLOCKS * sizeof(char*));
+	for (int i = 0; i < TOTAL_BLOCKS; i++) {
+		block_data[i] = malloc(DATA_BLOCK_SIZE * sizeof(char));
+	}
+
+	// If malloc didn't work well
+	if (block_data) {
+		return 0;
+	}
+	return -1;
+}
+
+void free_disk_emulator(void) {
+	if (block_data) {
+		for (int i = 0; i < TOTAL_BLOCKS; i++) {
+			free(block_data[i]);
+		}
+		free(block_data);
+		block_data = NULL;
 	}
 }
 
-int read_block(int block_id, void** target) {
-	init();
-
-	void *p = BLOCK_DATA[block_id];
-
-	if(p == NULL) {
-		// No data found
-		return -1;
+int read_block(int block_id, void * target) {
+	if ((block_id >= 0) && (block_id < TOTAL_BLOCKS)) {
+		memcpy(target, block_data[block_id], DATA_BLOCK_SIZE);
+		return 0;
 	}
-
-	*target = p;
-
-	// Success
-	return 0;
+	return -1;
 }
 
-int write_block(int block_id, void* buffer) {
-	init();
+int write_block(int block_id, void * buffer, size_t buffer_size) {
+	if ((block_id >= 0) && (block_id < TOTAL_BLOCKS)) {
 
-	void *p = BLOCK_DATA[block_id];
-
-	if(p != NULL) {
-		free(p);
+		size_t copy_size = buffer_size < DATA_BLOCK_SIZE ? buffer_size : DATA_BLOCK_SIZE;
+		memcpy(block_data[block_id], buffer, copy_size);
+		if(copy_size < DATA_BLOCK_SIZE) {
+			memset(block_data[block_id] + copy_size, 0, DATA_BLOCK_SIZE - copy_size);
+		}
+		return 0;
 	}
-
-	p = malloc(sizeof(void*) * DATA_BLOCK_SIZE);
-	memcpy(p, buffer, DATA_BLOCK_SIZE);
-
-	// Success
-	return 0;
+	return -1;
 }
+
