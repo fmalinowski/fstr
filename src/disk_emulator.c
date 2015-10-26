@@ -6,7 +6,7 @@
 
 static char ** block_data;
 
-int init_disk_emulator(void) {
+int init_disk_emulator(void) { // just for in memory simulation; substitue code for opening disk here
 	if (block_data) {
 		return -1; // Disk already allocated
 	}
@@ -23,7 +23,7 @@ int init_disk_emulator(void) {
 	return -1;
 }
 
-void free_disk_emulator(void) {
+void free_disk_emulator(void) { // just for in memory simulation; substitue code for closing disk here
 	if (block_data) {
 		for (int i = 0; i < TOTAL_BLOCKS; i++) {
 			free(block_data[i]);
@@ -46,9 +46,6 @@ int write_block(int block_id, void * buffer, size_t buffer_size) {
 
 		size_t copy_size = buffer_size < DATA_BLOCK_SIZE ? buffer_size : DATA_BLOCK_SIZE;
 		memcpy(block_data[block_id], buffer, copy_size);
-		if(copy_size < DATA_BLOCK_SIZE) {
-			memset(block_data[block_id] + copy_size, 0, DATA_BLOCK_SIZE - copy_size);
-		}
 		return 0;
 	}
 	return -1;
