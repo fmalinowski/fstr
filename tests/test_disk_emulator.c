@@ -9,6 +9,7 @@
 
 TEST_GROUP_RUNNER(TestDiskEmulator) {
   RUN_TEST_CASE(TestDiskEmulator, init_disk_emulator_and_free_disk_emulator_well);
+  RUN_TEST_CASE(TestDiskEmulator, write_block__succeed_if_buffer_size_is_less_than_DATA_BLOCK_SIZE);
   RUN_TEST_CASE(TestDiskEmulator, write_block__succeed_if_write_is_inside_limits_of_disk);
   RUN_TEST_CASE(TestDiskEmulator, read_block__cannot_read_if_outside_disk_limits);
   RUN_TEST_CASE(TestDiskEmulator, read_block__write_and_read_correctly_what_was_written);
@@ -162,6 +163,7 @@ TEST(TestDiskEmulator, write_block__succeed_if_buffer_size_is_less_than_DATA_BLO
 	TEST_ASSERT_EQUAL(0, write_block(0, buffer, strlen(buffer) + 1)); // Write in first block
 	read_block(0, read_buffer);
 	TEST_ASSERT_EQUAL_STRING("bbb", read_buffer);
+	TEST_ASSERT_FALSE('a' == read_buffer[4]);
 	
 	free_disk_emulator();
 	free_string(buffer);
