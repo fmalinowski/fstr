@@ -43,7 +43,6 @@ struct data_block {
 	struct data_block * next;
 };
 
-
 int make_fs(void);
 struct inode * ialloc(void);	// allocate an inode
 struct inode * iget(int inode_number); // read an inode
