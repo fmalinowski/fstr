@@ -6,7 +6,7 @@
 
 static char ** block_data;
 
-int init_disk_emulator(void) {
+int init_disk_emulator(void) { // just for in memory simulation; substitue code for opening disk here
 	if (block_data) {
 		return -1; // Disk already allocated
 	}
@@ -23,7 +23,7 @@ int init_disk_emulator(void) {
 	return -1;
 }
 
-void free_disk_emulator(void) {
+void free_disk_emulator(void) { // just for in memory simulation; substitue code for closing disk here
 	if (block_data) {
 		for (int i = 0; i < TOTAL_BLOCKS; i++) {
 			free(block_data[i]);

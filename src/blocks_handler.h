@@ -8,18 +8,19 @@
 #define DATA_BLOCK_SIZE 4096
 
 struct superbock {
-	int free_data_block_list_size;
-	int * free_data_blocks_list;
-	int inode_list_size;
-	int free_inode_list_size;
+	int total_data_blocks;
+	short block_size;
+	short number_of_inodes;
+	unsigned char inode_size;
+	int free_data_blocks;
+	int free_inodes_list_size;
 	int * free_inodes_list;
-	int * inodes_locks;
-	int * data_block_locks;
 };
 
 typedef enum {
 	ordinary,
-	directory
+	directory,
+	free
 } File_Type;
 
 struct inode {
@@ -27,9 +28,9 @@ struct inode {
 	int file_owner_id;
 	File_Type file_type;
 	char permissions;
-	struct tm last_modified_file;
-	struct tm last_accessed_file;
-	struct tm last_modified_inode;
+	time_t last_modified_file;
+	time_t last_accessed_file;
+	time_t last_modified_inode;
 	int links_nb;
 	int direct_blocks[16];
 	int single_indirect_block;
@@ -40,7 +41,6 @@ struct inode {
 struct data_block {
 	int data_block_id;
 	char block[DATA_BLOCK_SIZE];
-	struct data_block * next;
 };
 
 
