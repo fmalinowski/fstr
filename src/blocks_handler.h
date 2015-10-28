@@ -19,7 +19,7 @@ struct superbock {
 
 typedef enum {
 	ordinary,
-	directory
+	directory,
 	free
 } File_Type;
 
