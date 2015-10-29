@@ -1,10 +1,16 @@
 #ifndef BLOCKS_HANDLER
 #define BLOCKS_HANDLER
-/*
+
 #include <time.h>
 
 #define INODE_LIST_SIZE 1024 // WE NEED TO FIGURE OUT THIS NUMBER
+#define INODE_SIZE 256 /* WE NEED TO FIGURE OUT THIS NUMBER. 
+						  I have defined this here, instead of using sizeof(struct inode),
+						  because we want to make sure that this size 
+						  is a power of two.
+						*/
 #define DATA_BLOCK_LIST_SIZE 4096 // WE NEED TO FIGURE OUT THIS NUMBER
+#define ILIST_BEGIN ? // FIX BEGINNING POSITION OF I-LIST
 #define DATA_BLOCK_SIZE 4096
 
 struct superbock {
@@ -43,7 +49,6 @@ struct data_block {
 	struct data_block * next;
 };
 
-
 int make_fs(void);
 struct inode * ialloc(void);	// allocate an inode
 struct inode * iget(int inode_number); // read an inode
@@ -54,6 +59,6 @@ struct data_block * data_block_alloc(); // Will make calls to bread, brelse, get
 struct data_block * bread(int data_block_nb); // Read the data block
 int bwrite(struct data_block *); // Write the data block
 int data_block_free(struct data_block *);
-*/
+
 
 #endif
