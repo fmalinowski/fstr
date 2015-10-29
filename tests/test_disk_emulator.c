@@ -28,7 +28,7 @@ TEST_GROUP(TestDiskEmulator);
 TEST_SETUP(TestDiskEmulator) {
 }
 
-// To be xecuted after each test
+// To be executed after each test
 TEST_TEAR_DOWN(TestDiskEmulator) {
 }
 

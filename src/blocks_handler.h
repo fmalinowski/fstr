@@ -13,11 +13,11 @@
 #define ILIST_BEGIN ? // FIX BEGINNING POSITION OF I-LIST
 #define DATA_BLOCK_SIZE 4096
 
-struct superbock {
+struct superblock {
 	int total_data_blocks;
 	short block_size;
 	short number_of_inodes;
-	unsigned char inode_size;
+	short inode_size;
 	int free_data_blocks;
 	int free_inodes_list_size;
 	int * free_inodes_list;
@@ -26,7 +26,7 @@ struct superbock {
 typedef enum {
 	ordinary,
 	directory,
-	free
+	free_inode
 } File_Type;
 
 struct inode {
@@ -55,10 +55,19 @@ struct inode * iget(int inode_number); // read an inode
 int iput(struct inode *); // Update the inode and free inode and data blocks if link count reaches 0
 int ifree(struct inode *); // free the inode and put it in the free inode list
 
-struct data_block * data_block_alloc(); // Will make calls to bread, brelse, getblk
-struct data_block * bread(int data_block_nb); // Read the data block
-int bwrite(struct data_block *); // Write the data block
-int data_block_free(struct data_block *);
+struct data_block * data_block_alloc(void); // Allocate a new data block
+struct data_block * bread(int data_block_nb); // Read the data block from disk
+int bwrite(struct data_block *); // Write the data block to disk
+int data_block_free(struct data_block *); // WARNING: this doesn't free the struct data_block. It has to be done by developer
 
+
+// UTILITIES
+int get_block_number_of_first_datablock(struct superblock * sp);
+int get_ith_block_number_in_datablock(char * datablock, int i);
+void set_ith_block_number_in_datablock(char * datablock, int i, int block_number);
+int has_at_least_one_datablock_number_left_without_pointer(char * datablock);
+int is_datablock_full_of_free_datablock_numbers(char * datablock);
+int get_ith_position_of_free_spot_in_free_datablock_number_list_for_new_free_datablock(char * datablock);
+void shift_datablock_numbers_in_buffer_to_left_except_pointer_to_next_block(char * datablock);
 
 #endif
