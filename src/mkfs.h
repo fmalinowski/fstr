@@ -3,14 +3,14 @@
 
 #include "common.h"
 
-void create_fs();
+void create_fs(void);
 
-int create_superblock();
+int create_superblock(void);
 
-int create_inodes();
+int create_inodes(void);
 
 int write_inode(struct inode *inode);
 
-int create_free_blocks();
+int create_free_blocks(void);
 
 #endif

@@ -1,8 +1,8 @@
 #include "mkfs.h"
 #include "disk_emulator.h"
 
-void create_fs() {
-	printf("Creating FSTR...\n");
+void create_fs(void) {
+	LOGD("Creating FSTR...");
 
 	create_superblock();
 
@@ -10,11 +10,11 @@ void create_fs() {
 
 	create_free_blocks();
 
-	printf("Finished creating FSTR!\n");
+	LOGD("Finished creating FSTR!");
 }
 
 // Write empty superblock to disk
-int create_superblock() {
+int create_superblock(void) {
     superblock.fs_size = FS_SIZE;
 
     superblock.num_free_blocks = ((NUM_BLOCKS - NUM_INODE_BLOCKS - 1) * (BLOCK_ID_LIST_LENGTH - 1)) / BLOCK_ID_LIST_LENGTH;
@@ -32,20 +32,20 @@ int create_superblock() {
     }
     superblock.next_free_inode = 0; // first free inode number
 
-    printf("FS size: %lld\n", superblock.fs_size);
-    printf("Block size: %d\n", BLOCK_SIZE);
-    printf("No. of blocks: %d\n", NUM_BLOCKS);
-    printf("inode size: %d\n", INODE_SIZE);
-    printf("No. of inodes: %d\n", NUM_INODES);
-    printf("No. of inode blocks: %lld\n", NUM_INODE_BLOCKS);
-    printf("No. of free blocks: %lld\n", superblock.num_free_blocks);
-    printf("Size of struct superblock: %ld\n", sizeof(struct superblock));
-    printf("Size of struct inode: %ld\n", sizeof(struct inode));
+    LOGD("FS size: %lld", superblock.fs_size);
+    LOGD("Block size: %d", BLOCK_SIZE);
+    LOGD("No. of blocks: %d", NUM_BLOCKS);
+    LOGD("inode size: %d", INODE_SIZE);
+    LOGD("No. of inodes: %d", NUM_INODES);
+    LOGD("No. of inode blocks: %lld", NUM_INODE_BLOCKS);
+    LOGD("No. of free blocks: %lld", superblock.num_free_blocks);
+    LOGD("Size of struct superblock: %ld", sizeof(struct superblock));
+    LOGD("Size of struct inode: %ld", sizeof(struct inode));
 
     return write_block(0, &superblock, sizeof(struct superblock));
 }
 
-int create_inodes() {
+int create_inodes(void) {
     struct inode inode;
 
     int i, j;
@@ -81,7 +81,7 @@ int write_inode(struct inode *inode) {
 	return write_block_offset(block_id, inode, sizeof(struct inode), offset);
 }
 
-int create_free_blocks() {
+int create_free_blocks(void) {
     struct block_id_list block_id_list;
     big_int num_data_blocks = NUM_BLOCKS - NUM_INODE_BLOCKS - 1;
 
