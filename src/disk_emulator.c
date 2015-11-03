@@ -1,19 +1,16 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "constants.h"
 #include "disk_emulator.h"
 
-static char ** block_data;
+static char **block_data;
 
 int init_disk_emulator(void) { // just for in memory simulation; substitue code for opening disk here
 	if (block_data) {
 		return -1; // Disk already allocated
 	}
 
-	block_data = malloc(TOTAL_BLOCKS * sizeof(char*));
-	for (int i = 0; i < TOTAL_BLOCKS; i++) {
-		block_data[i] = malloc(DATA_BLOCK_SIZE * sizeof(char));
+	block_data = malloc(NUM_BLOCKS * sizeof(char*));
+	int i;
+	for (i = 0; i < NUM_BLOCKS; i++) {
+		block_data[i] = malloc(BLOCK_SIZE * sizeof(char));
 	}
 
 	// If malloc didn't work well
@@ -25,7 +22,8 @@ int init_disk_emulator(void) { // just for in memory simulation; substitue code 
 
 void free_disk_emulator(void) { // just for in memory simulation; substitue code for closing disk here
 	if (block_data) {
-		for (int i = 0; i < TOTAL_BLOCKS; i++) {
+		int i;
+		for (i = 0; i < NUM_BLOCKS; i++) {
 			free(block_data[i]);
 		}
 		free(block_data);
@@ -33,21 +31,21 @@ void free_disk_emulator(void) { // just for in memory simulation; substitue code
 	}
 }
 
-int read_block(int block_id, void * target) {
-	if ((block_id >= 0) && (block_id < TOTAL_BLOCKS)) {
-		memcpy(target, block_data[block_id], DATA_BLOCK_SIZE);
+int read_block(big_int block_id, void * target) {
+	if ((block_id >= 0) && (block_id < NUM_BLOCKS)) {
+		memcpy(target, block_data[block_id], BLOCK_SIZE);
 		return 0;
 	}
 	return -1;
 }
 
-int write_block(int block_id, void * buffer, size_t buffer_size) {
-	if ((block_id >= 0) && (block_id < TOTAL_BLOCKS)) {
+int write_block(big_int block_id, void * buffer, size_t buffer_size) {
+	if ((block_id >= 0) && (block_id < NUM_BLOCKS)) {
 
-		size_t copy_size = buffer_size < DATA_BLOCK_SIZE ? buffer_size : DATA_BLOCK_SIZE;
+		size_t copy_size = buffer_size < BLOCK_SIZE ? buffer_size : BLOCK_SIZE;
 		memcpy(block_data[block_id], buffer, copy_size);
-		if(copy_size < DATA_BLOCK_SIZE) {
-			memset(block_data[block_id] + copy_size, 0, DATA_BLOCK_SIZE - copy_size);
+		if(copy_size < BLOCK_SIZE) {
+			memset(block_data[block_id] + copy_size, 0, BLOCK_SIZE - copy_size);
 		}
 		return 0;
 	}
