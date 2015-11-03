@@ -2,7 +2,6 @@
 
 CC = gcc
 
-CFLAGS = -std=c99
 CFLAGS += -Wall
 CFLAGS += `pkg-config fuse --cflags --libs`
 
