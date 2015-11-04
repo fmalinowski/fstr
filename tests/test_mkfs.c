@@ -50,7 +50,7 @@ TEST(TestMkfs, inodes_are_written_contiguously_after_superblock) {
 		int j;
 		for(j = 0; inode_count < NUM_INODES && j < (BLOCK_SIZE / INODE_SIZE); j++) {
 			memcpy(&inode, buffer + (j * INODE_SIZE), sizeof(struct inode));
-			TEST_ASSERT_EQUAL(inode_count, inode.inode_id);
+			TEST_ASSERT_EQUAL(inode_count + 1, inode.inode_id);
 			inode_count++;
 		}
 	}
