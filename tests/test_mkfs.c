@@ -43,7 +43,7 @@ TEST(TestMkfs, inodes_are_written_contiguously_after_superblock) {
 	struct inode inode;
 
 	int inode_count = 0;
-	int i;
+	unsigned int i;
 	for(i = 0; inode_count < NUM_INODES && i < NUM_INODE_BLOCKS; i++) {
 		read_block(1 + i, buffer);
 

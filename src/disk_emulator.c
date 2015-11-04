@@ -32,7 +32,7 @@ void free_disk_emulator(void) { // just for in memory simulation; substitue code
 }
 
 int read_block(big_int block_id, void * target) {
-	if ((block_id >= 0) && (block_id < NUM_BLOCKS)) {
+	if (block_id < NUM_BLOCKS) {
 		memcpy(target, block_data[block_id], BLOCK_SIZE);
 		return 0;
 	}
@@ -40,7 +40,7 @@ int read_block(big_int block_id, void * target) {
 }
 
 int write_block(big_int block_id, void * buffer, size_t buffer_size) {
-	if ((block_id >= 0) && (block_id < NUM_BLOCKS)) {
+	if (block_id < NUM_BLOCKS) {
 
 		size_t copy_size = buffer_size < BLOCK_SIZE ? buffer_size : BLOCK_SIZE;
 		memcpy(block_data[block_id], buffer, copy_size);
