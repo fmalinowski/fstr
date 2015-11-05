@@ -83,17 +83,15 @@ int write_inode(struct inode *inode) {
 
 int create_free_blocks(void) {
     struct block_id_list block_id_list;
-    big_int num_data_blocks = NUM_BLOCKS - NUM_INODE_BLOCKS - 1;
 
-    big_int num_free_blocks = superblock.num_free_blocks;
-    big_int num_free_block_lists = num_free_blocks / (BLOCK_ID_LIST_LENGTH - 1);
+    big_int num_free_block_lists = NUM_BLOCKS - (1 + NUM_INODE_BLOCKS + superblock.num_free_blocks);
 
     big_int free_block_id = 1 + NUM_INODE_BLOCKS + num_free_block_lists;
 
     big_int i;
     for(i = 0; i < num_free_block_lists; i++) {
         big_int block_id = 1 + NUM_INODE_BLOCKS + i;
-        big_int next_block_id = -1;
+        big_int next_block_id = 0;
         if(i < num_free_block_lists - 1) {
             next_block_id = block_id + 1;
         }
@@ -103,7 +101,7 @@ int create_free_blocks(void) {
 
         int j;
         for(j = BLOCK_ID_LIST_LENGTH - 1; j > 0; j--) {
-            if(free_block_id < num_data_blocks) {
+            if(free_block_id < NUM_BLOCKS) {
                 // Store block_id of free block
                 block_id_list.list[j] = free_block_id++;
             } else {

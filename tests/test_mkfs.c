@@ -8,6 +8,7 @@
 TEST_GROUP_RUNNER(TestMkfs) {
 	RUN_TEST_CASE(TestMkfs, superblock_is_written_correctly);
 	RUN_TEST_CASE(TestMkfs, inodes_are_written_contiguously_after_superblock);
+	RUN_TEST_CASE(TestMkfs, free_lists_are_correctly_initialized);
 }
 
 TEST_GROUP(TestMkfs);
@@ -54,4 +55,26 @@ TEST(TestMkfs, inodes_are_written_contiguously_after_superblock) {
 			inode_count++;
 		}
 	}
+}
+
+TEST(TestMkfs, free_lists_are_correctly_initialized) {
+	create_superblock(); // This is required to init superblock
+	create_free_blocks();
+
+	struct block_id_list block_id_list;
+	big_int free_blocks_count = 0;
+	big_int free_list_pointer = superblock.next_free_block_list;
+
+	while(free_list_pointer) {
+		if(read_block(free_list_pointer, &block_id_list))	break;
+
+		free_list_pointer = block_id_list.list[0];
+		int i;
+		for(i = BLOCK_ID_LIST_LENGTH - 1; i > 0; i--) {
+			if(!block_id_list.list[i])	break;
+			free_blocks_count++;
+		}
+	}
+
+	TEST_ASSERT_EQUAL(superblock.num_free_blocks, free_blocks_count);
 }
