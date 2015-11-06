@@ -10,12 +10,7 @@
 
 
 big_int get_block_number_of_first_datablock(void) {
-	big_int number_inodes_per_block, position_of_first_data_block;
-
-	number_inodes_per_block = BLOCK_SIZE / INODE_SIZE;
-	position_of_first_data_block = (int) ceil(((double)NUM_INODES) / ((double)number_inodes_per_block)) + 1; // Superblock block number is 0
-
-	return position_of_first_data_block;
+	return 1 + NUM_INODE_BLOCKS;
 }
 
 // first block number is when i = 1
