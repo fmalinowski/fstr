@@ -8,22 +8,12 @@
 
 #include "data_blocks_handler.h"
 
-// TODO
-// Modify tests and run them
-// 1- check that in get_block_number_of_first_datablock, position_of_first_data_block is the same as the constant written by Tanuj.Maybe run tests for tanuj constant
-// 2- change get_superblock by superblock global variable. or change get_superblock to return the global variable?
-// 3- Decrease number of free datablocks in superblock!
 
 big_int get_block_number_of_first_datablock(void) {
-// int get_block_number_of_first_datablock(struct superblock * sp) {
-	big_int block_size, total_number_of_inodes, inode_size, number_inodes_per_block, position_of_first_data_block;
-	
-	block_size = BLOCK_SIZE; //(int) sp->block_size;
-	total_number_of_inodes = NUM_INODES; //(int) sp->number_of_inodes;
-	inode_size = INODE_SIZE; //(int) sp->inode_size;
+	big_int number_inodes_per_block, position_of_first_data_block;
 
-	number_inodes_per_block = block_size / inode_size;
-	position_of_first_data_block = (int) ceil(((double)total_number_of_inodes) / ((double)number_inodes_per_block)) + 1; // Superblock block number is 0
+	number_inodes_per_block = BLOCK_SIZE / INODE_SIZE;
+	position_of_first_data_block = (int) ceil(((double)NUM_INODES) / ((double)number_inodes_per_block)) + 1; // Superblock block number is 0
 
 	return position_of_first_data_block;
 }
