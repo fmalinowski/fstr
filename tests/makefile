@@ -29,8 +29,8 @@ INCLUDES = -I./../src -Iinclude -Iinclude/fixture
 SRC_DIR = src
 BIN_DIR = bin
 
-TESTS = include/unity.c include/fixture/unity_fixture.c all_tests.c test_disk_emulator.c test_blocks_handler.c
-SRC_FILES_USED_IN_TESTS = ../src/disk_emulator.c ../src/blocks_handler.c ../src/memory_structures.c
+TESTS = include/unity.c include/fixture/unity_fixture.c all_tests.c test_disk_emulator.c test_data_blocks_handler.c
+SRC_FILES_USED_IN_TESTS = ../src/disk_emulator.c ../src/data_blocks_handler.c ../src/common.c
 
 all: clean tests
 
