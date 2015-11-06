@@ -287,9 +287,9 @@ TEST(TestDataBlocksHandler, data_block_free) {
 	superblock.num_free_blocks = 1057;
 
 
-	first_datablock_position = get_block_number_of_first_datablock(); // It is 8193 !!
+	first_datablock_position = get_block_number_of_first_datablock();
 
-	pointer_to_second_datablock = 9001; // 530 These are random but they have to be after 1st datablock
+	pointer_to_second_datablock = 9001; // These are random but they have to be after 1st datablock
 
 	// We make the 1st datablock almost full in terms of datablock number (there's room just for a last datablock number)
 	memset(first_datablock, 0, BLOCK_SIZE); // Set 0s to the datablock before setting datablock numbers
@@ -301,10 +301,10 @@ TEST(TestDataBlocksHandler, data_block_free) {
 	// We write to disk the datablock containing the list of free datablocks
 	write_block(first_datablock_position, first_datablock, BLOCK_SIZE);
 
-	pointer_to_third_datablock = 10053; // 550
+	pointer_to_third_datablock = 10053;
 	memset(second_datablock, 0, BLOCK_SIZE); // Set 0s to the datablock before setting datablock numbers
 	set_ith_block_number_in_datablock(second_datablock, 1, pointer_to_third_datablock); // Set pointer to third datablock (we won't create it)
-	set_ith_block_number_in_datablock(second_datablock, 2, 8567); // 506 Set a random free datablock number in second datablock list
+	set_ith_block_number_in_datablock(second_datablock, 2, 8567); // Set a random free datablock number in second datablock list
 
 	// We write to disk the datablock containing the list of free datablocks
 	write_block(pointer_to_second_datablock, second_datablock, BLOCK_SIZE);
@@ -314,7 +314,7 @@ TEST(TestDataBlocksHandler, data_block_free) {
 
 	// We free a datablock
 	struct data_block datablock_to_free_1;
-	datablock_to_free_1.data_block_id = 8046; // 495 
+	datablock_to_free_1.data_block_id = 8046;
 	memset(datablock_to_free_1.block, 1, BLOCK_SIZE); // Put random content in datablock to be freed
 
 	TEST_ASSERT_EQUAL(0, data_block_free(&datablock_to_free_1));
@@ -342,7 +342,7 @@ TEST(TestDataBlocksHandler, data_block_free) {
 
 	// We free another datablock
 	struct data_block datablock_to_free_2;
-	datablock_to_free_2.data_block_id = 8053; // 497
+	datablock_to_free_2.data_block_id = 8053;
 	memset(datablock_to_free_1.block, 1, BLOCK_SIZE); // Put random content in datablock to be freed
 
 	// We free a datablock
@@ -372,7 +372,7 @@ TEST(TestDataBlocksHandler, data_block_free) {
 
 	// We free another datablock
 	struct data_block datablock_to_free_3;
-	datablock_to_free_3.data_block_id = 8078; // 499
+	datablock_to_free_3.data_block_id = 8078;
 	memset(datablock_to_free_3.block, 1, BLOCK_SIZE); // Put random content in datablock to be freed
 
 	// We free a datablock
