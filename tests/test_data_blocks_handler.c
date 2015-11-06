@@ -4,7 +4,6 @@
 #include "unity.h"
 #include "unity_fixture.h"
 
-#include "constants.h"
 #include "common.h"
 #include "disk_emulator.h"
 #include "data_blocks_handler.h"
@@ -45,7 +44,6 @@ TEST(TestDataBlocksHandler, get_block_number_of_first_datablock) {
 	// INODE_SIZE = 256
 
 	TEST_ASSERT_EQUAL(821, get_block_number_of_first_datablock());
-	TEST_ASSERT_EQUAL((NUM_INODE_BLOCKS + 1), get_block_number_of_first_datablock());
 }
 
 TEST(TestDataBlocksHandler, get_ith_block_number_in_datablock__returns_ID_of_datablock_placed_in_ith_position_in_datablock) {
@@ -108,7 +106,8 @@ TEST(TestDataBlocksHandler, shift_datablock_numbers_in_buffer_to_left_except_poi
 	number_of_block_numbers_in_datablock = BLOCK_SIZE / sizeof(big_int);
 
 	// We set the position of the block number as the block number in the buffer for the purpose of the test
-	for (int block_number = 1; block_number <= number_of_block_numbers_in_datablock; block_number++) {
+	int block_number;
+	for (block_number = 1; block_number <= number_of_block_numbers_in_datablock; block_number++) {
 		set_ith_block_number_in_datablock(datablock, block_number, (big_int)block_number);
 	}
 
@@ -118,7 +117,8 @@ TEST(TestDataBlocksHandler, shift_datablock_numbers_in_buffer_to_left_except_poi
 	TEST_ASSERT_EQUAL(1, get_ith_block_number_in_datablock(datablock, 1));
 
 	// Assert all the other blocks left shifted (block number 2 disappeared)
-	for (int i = 3; i <= number_of_block_numbers_in_datablock; i++) {
+	int i;
+	for (i = 3; i <= number_of_block_numbers_in_datablock; i++) {
 		TEST_ASSERT_EQUAL(i, get_ith_block_number_in_datablock(datablock, i-1));
 	}
 
@@ -277,6 +277,7 @@ TEST(TestDataBlocksHandler, get_ith_position_of_free_spot_in_free_datablock_numb
 }
 
 TEST(TestDataBlocksHandler, data_block_free) {
+	int i;
 	int first_datablock_position, pointer_to_second_datablock, pointer_to_third_datablock;
 	char first_datablock[BLOCK_SIZE], second_datablock[BLOCK_SIZE];
 	char read_buffer[BLOCK_SIZE];
@@ -293,7 +294,7 @@ TEST(TestDataBlocksHandler, data_block_free) {
 
 	// We make the 1st datablock almost full in terms of datablock number (there's room just for a last datablock number)
 	memset(first_datablock, 0, BLOCK_SIZE); // Set 0s to the datablock before setting datablock numbers
-	for (int i = 1; (i * sizeof(big_int)) <= (BLOCK_SIZE - sizeof(big_int)); i++) {
+	for (i = 1; (i * sizeof(big_int)) <= (BLOCK_SIZE - sizeof(big_int)); i++) {
 		set_ith_block_number_in_datablock(first_datablock, i, i);
 	}
 	set_ith_block_number_in_datablock(first_datablock, 1, 9001); // Set pointer to second datablock
@@ -334,7 +335,7 @@ TEST(TestDataBlocksHandler, data_block_free) {
 
 	// We make sure the datablock that was freed has only 0s in its content
 	read_block(8046, read_buffer);
-	for (int i = 0; i < BLOCK_SIZE; i++) {
+	for (i = 0; i < BLOCK_SIZE; i++) {
 		TEST_ASSERT_EQUAL(0, (int)read_buffer[i]);
 	}
 
@@ -402,13 +403,14 @@ TEST(TestDataBlocksHandler, data_block_free) {
 }
 
 TEST(TestDataBlocksHandler, bread) {
+	int i;
 	struct data_block * datablock;
 	char read_buffer[BLOCK_SIZE], buffer[BLOCK_SIZE];
 
 	init_disk_emulator();
 
 	read_block(8201, read_buffer);
-	for (int i = 0; i < BLOCK_SIZE; i++) {
+	for (i = 0; i < BLOCK_SIZE; i++) {
 		buffer[i] = 'd';
 		TEST_ASSERT_FALSE(read_buffer[i] == 'd');
 	}
@@ -419,12 +421,13 @@ TEST(TestDataBlocksHandler, bread) {
 	datablock = bread(8201);
 	TEST_ASSERT_EQUAL(8201, datablock->data_block_id);
 	
-	for (int i = 0; i < BLOCK_SIZE; i++) {
+	for (i = 0; i < BLOCK_SIZE; i++) {
 		TEST_ASSERT_EQUAL('d', datablock->block[i]);
 	}
 }
 
 TEST(TestDataBlocksHandler, bwrite) {
+	int i;
 	struct data_block datablock;
 	char read_buffer[BLOCK_SIZE];
 
@@ -432,7 +435,7 @@ TEST(TestDataBlocksHandler, bwrite) {
 
 	datablock.data_block_id = 8201;
 
-	for (int i = 0; i < BLOCK_SIZE; i++) {
+	for (i = 0; i < BLOCK_SIZE; i++) {
 		datablock.block[i] = 'e';
 	}
 
@@ -440,7 +443,7 @@ TEST(TestDataBlocksHandler, bwrite) {
 
 	read_block(8201, read_buffer);
 	
-	for (int i = 0; i < BLOCK_SIZE; i++) {
+	for (i = 0; i < BLOCK_SIZE; i++) {
 		TEST_ASSERT_EQUAL('e', read_buffer[i]);
 	}
 }
