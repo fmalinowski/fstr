@@ -30,7 +30,7 @@ int create_superblock(void) {
         // empty cache list
     	superblock.free_inodes_cache[i] = 0;
     }
-    superblock.next_free_inode = 1; // first free inode number
+    superblock.next_free_inode = 1; // first free inode number; INODE_HANDLER IS CURRENTLY NOT TOUCHING THIS VALUE
 
     LOGD("FS size: %lld", superblock.fs_size);
     LOGD("Block size: %d", BLOCK_SIZE);
@@ -50,7 +50,7 @@ int create_inodes(void) {
 
     int i, j;
     for(i = 0; i < NUM_INODES; i++){
-    	inode.inode_id = i + 1;
+    	inode.inode_id = i;
 		inode.uid = 0;
         inode.gid = 0;
 		inode.type = TYPE_FREE;

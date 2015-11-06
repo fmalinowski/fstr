@@ -28,6 +28,7 @@
 #define BLOCK_SIZE 4096 // 4KB
 #define INODE_SIZE 256
 #define NUM_INODES ((int) (0.1 * NUM_BLOCKS))
+#define ILIST_BEGIN 1
 
 #define NUM_DIRECT_BLOCKS 16
 
