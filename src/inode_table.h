@@ -1,8 +1,10 @@
 #ifndef _INODE_TABLE_
 #define _INODE_TABLE_
 
-struct inode* get_inode(int inode_id);
+#include "common.h"
 
-int put_inode(struct inode *inode);
+struct inode* get_inode(big_int inode_id);
+
+int put_inode(struct inode *inod);
 
 #endif
