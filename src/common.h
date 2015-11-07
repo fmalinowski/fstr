@@ -14,6 +14,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <math.h>
+#include <dirent.h>
 
 #ifdef DEBUG
 #define LOGD(A, ...) printf("%s:%d " A "\n", __FILE__, __LINE__, ##__VA_ARGS__);

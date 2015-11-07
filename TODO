@@ -1,0 +1,4 @@
+TODO
+
+- Use superblock cache lists for inodes and blocks
+- Getter/Setter for superblock members
