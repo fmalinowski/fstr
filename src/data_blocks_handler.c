@@ -146,6 +146,7 @@ struct data_block * bread(big_int data_block_nb) {
 	datablock = (struct data_block *) malloc(sizeof(struct data_block));
 	if (read_block(data_block_nb, datablock->block) == -1) {
 		free(datablock);
+		//printf("readblock returned -1");
 		return NULL;
 	}
 
