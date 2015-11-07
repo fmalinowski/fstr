@@ -4,5 +4,4 @@ addons:
     packages:
       - libfuse-dev
 script:
-  - cd tests
   - make
