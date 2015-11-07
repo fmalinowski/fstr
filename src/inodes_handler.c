@@ -192,7 +192,7 @@ struct inode* ialloc(void){  // THIS DOES NOT SET THE FILETYPE OF INODE. MUST BE
 	blok3 = bread(ILIST_BEGIN + ((inod->inode_id - 1) / (BLOCK_SIZE / INODE_SIZE)));
 	
 	inode_offset_in_block = ((inod->inode_id - 1) % (BLOCK_SIZE / INODE_SIZE)) * INODE_SIZE;	
-	
+	inod->type = TYPE_ORDINARY;
 	memcpy(&(blok3->block[inode_offset_in_block]), inod, sizeof(struct inode));
 	
 	if(bwrite(blok3) == 0){

@@ -29,8 +29,11 @@ TEST_TEAR_DOWN(TestInodesHandler) {
 
 TEST(TestInodesHandler, test_iget_works_correctly){
 	struct inode * inod;
+	struct inode * inod2;
 	inod = iget(100);
 	TEST_ASSERT_EQUAL(100, inod->inode_id);
+	inod2 = iget(101);
+	TEST_ASSERT_EQUAL(101, inod2->inode_id);
 	//free(inod);
 	inod = iget(0);
 	TEST_ASSERT_EQUAL(NULL, inod);
@@ -40,10 +43,16 @@ TEST(TestInodesHandler, test_iget_works_correctly){
 
 TEST(TestInodesHandler, test_ialloc_works_correctly){
 	struct inode * inod = ialloc();
+	struct inode * inod2 = ialloc();
 	TEST_ASSERT_TRUE(inod != NULL);
+	TEST_ASSERT_TRUE(inod2 != NULL);
 	TEST_ASSERT_TRUE(inod->links_nb > 0);
 	TEST_ASSERT_TRUE(inod->inode_id > 0);
+	TEST_ASSERT_TRUE(inod2->links_nb > 0);
+	TEST_ASSERT_TRUE(inod2->inode_id > 0);
 	TEST_ASSERT_TRUE(inod->inode_id <= NUM_INODES);
+	TEST_ASSERT_TRUE(inod2->inode_id <= NUM_INODES);
+	TEST_ASSERT_TRUE(inod->inode_id != inod2->inode_id);
 }
 
 
