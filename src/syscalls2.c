@@ -118,3 +118,20 @@ struct file_descriptor_entry * get_file_descriptor_entry(int pid, int fd) {
 
 	return entry;
 }
+
+void delete_file_descriptor_entry(int pid, int fd) {
+	struct file_descriptor_table * table;
+	struct file_descriptor_entry * entry;
+
+	table = get_file_descriptor_table(pid);
+	if (table == NULL || fd >= table->total_descriptors || fd <= 2) {
+		return;
+	}
+
+	entry = &table->entries[fd];
+
+	// We just set the fd to be unused (-1). It would be cool to realloc the entries if we notice that 
+	// all the allocated fd entries are together and below the max allocated entry to save memory.
+	entry->fd = FD_NOT_USED;
+	table->used_descriptors--;
+}

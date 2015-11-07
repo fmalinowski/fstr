@@ -12,6 +12,7 @@ TEST_GROUP_RUNNER(TestSyscalls2) {
 	RUN_TEST_CASE(TestSyscalls2, allocate_file_descriptor_entry);
 	RUN_TEST_CASE(TestSyscalls2, allocate_file_descriptor_entry__when_table_is_full);
 	RUN_TEST_CASE(TestSyscalls2, get_file_descriptor_entry);
+	RUN_TEST_CASE(TestSyscalls2, delete_file_descriptor_entry);
 }
 
 
@@ -157,6 +158,45 @@ TEST(TestSyscalls2, get_file_descriptor_entry) {
 	TEST_ASSERT_FALSE(result_entry == NULL);
 	TEST_ASSERT_EQUAL(entry, result_entry);
 	TEST_ASSERT_EQUAL(3, result_entry->fd);
+
+	delete_file_descriptor_table(2134);
+}
+
+TEST(TestSyscalls2, delete_file_descriptor_entry) {
+	struct file_descriptor_entry *entry, *entry2, *result_entry;
+	struct file_descriptor_table *table;
+
+	// Make sure it doesn't blow up if we delete something that didn't exist before
+	delete_file_descriptor_entry(2134, 3);
+
+	entry = allocate_file_descriptor_entry(2134);
+	table = get_file_descriptor_table(2134);
+
+	entry2 = allocate_file_descriptor_entry(2134);
+
+	TEST_ASSERT_EQUAL(5, table->used_descriptors);
+
+	// Make sure we cannot delete the file descriptors 0, 1, 2
+	delete_file_descriptor_entry(2134, 0);
+	delete_file_descriptor_entry(2134, 1);
+	delete_file_descriptor_entry(2134, 2);
+
+	result_entry = get_file_descriptor_entry(2134, 0);
+	TEST_ASSERT_EQUAL(0, result_entry->fd);
+	result_entry = get_file_descriptor_entry(2134, 1);
+	TEST_ASSERT_EQUAL(1, result_entry->fd);
+	result_entry = get_file_descriptor_entry(2134, 2);
+	TEST_ASSERT_EQUAL(2, result_entry->fd);
+	
+	TEST_ASSERT_EQUAL(3, entry->fd);
+	delete_file_descriptor_entry(2134, 3);
+	TEST_ASSERT_EQUAL(FD_NOT_USED, entry->fd);
+	TEST_ASSERT_EQUAL(4, table->used_descriptors);
+
+	TEST_ASSERT_EQUAL(4, entry2->fd);
+	delete_file_descriptor_entry(2134, 4);
+	TEST_ASSERT_EQUAL(FD_NOT_USED, entry2->fd);
+	TEST_ASSERT_EQUAL(3, table->used_descriptors);
 
 	delete_file_descriptor_table(2134);
 }
