@@ -99,3 +99,22 @@ struct file_descriptor_entry * allocate_file_descriptor_entry(int pid) {
 
 	return entry;
 }
+
+struct file_descriptor_entry * get_file_descriptor_entry(int pid, int fd) {
+	struct file_descriptor_table * table;
+	struct file_descriptor_entry * entry;
+
+	table = get_file_descriptor_table(pid);
+	if (table == NULL || fd >= table->total_descriptors) {
+		return NULL;
+	}
+
+	entry = &table->entries[fd];
+
+	// If file descriptor not yet assigned (properly allocated for an open file), we return NULL
+	if (entry->fd == FD_NOT_USED) {
+		return NULL;
+	}
+
+	return entry;
+}

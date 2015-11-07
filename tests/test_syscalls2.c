@@ -11,6 +11,7 @@ TEST_GROUP_RUNNER(TestSyscalls2) {
 	RUN_TEST_CASE(TestSyscalls2, find_available_fd);
 	RUN_TEST_CASE(TestSyscalls2, allocate_file_descriptor_entry);
 	RUN_TEST_CASE(TestSyscalls2, allocate_file_descriptor_entry__when_table_is_full);
+	RUN_TEST_CASE(TestSyscalls2, get_file_descriptor_entry);
 }
 
 
@@ -136,4 +137,26 @@ TEST(TestSyscalls2, allocate_file_descriptor_entry__when_table_is_full) {
 	TEST_ASSERT_EQUAL(3, entry->fd);
 
 	delete_file_descriptor_table(1632);
+}
+
+TEST(TestSyscalls2, get_file_descriptor_entry) {
+	struct file_descriptor_entry *entry, *result_entry;
+
+	result_entry = get_file_descriptor_entry(2134, 0);
+	TEST_ASSERT_NULL(result_entry);
+
+	entry = allocate_file_descriptor_entry(2134);
+	
+	result_entry = get_file_descriptor_entry(2134, 8);
+	TEST_ASSERT_NULL(result_entry);
+
+	result_entry = get_file_descriptor_entry(2134, 4);
+	TEST_ASSERT_NULL(result_entry);
+
+	result_entry = get_file_descriptor_entry(2134, 3);
+	TEST_ASSERT_FALSE(result_entry == NULL);
+	TEST_ASSERT_EQUAL(entry, result_entry);
+	TEST_ASSERT_EQUAL(3, result_entry->fd);
+
+	delete_file_descriptor_table(2134);
 }
