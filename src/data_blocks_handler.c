@@ -28,27 +28,30 @@ void set_ith_block_number_in_datablock(char * datablock, int i, big_int block_nu
 }
 
 // Returns 0 if there is only the pointer to the next datablock containing IDs of free datablocks) or if there is no pointer.
-// 1st datablock number is always the ID of the next datablock containing the IDs of the free datablocks
 int has_at_least_one_datablock_number_left_without_pointer(char * datablock) {
-	int second_datablock_number;
+	big_int block_number;
+	int i;
 
-	second_datablock_number = get_ith_block_number_in_datablock(datablock, 2);
+	for (i = BLOCK_ID_LIST_LENGTH; i >= 2; i--) {
+		memcpy(&block_number, &datablock[(i-1) * sizeof(big_int)], sizeof(big_int));
 
-	if (second_datablock_number == 0) {
-		return 0;
+		if (block_number != 0) {
+			return 1;
+		}
 	}
-	return 1;
+	return 0;
 }
 
 int is_datablock_full_of_free_datablock_numbers(char * datablock) {
-	int position_of_last_block_number;
-	big_int last_block_number;
+	big_int block_number;
+	int i;
 
-	position_of_last_block_number = BLOCK_SIZE - sizeof(big_int);
-	memcpy(&last_block_number, &datablock[position_of_last_block_number], sizeof(big_int));
+	for (i = 2; i <= (int)BLOCK_ID_LIST_LENGTH; i++) {
+		memcpy(&block_number, &datablock[(i-1) * sizeof(big_int)], sizeof(big_int));
 
-	if (last_block_number == 0) {
-		return 0;
+		if (block_number == 0) {
+			return 0;
+		}
 	}
 	return 1;
 }
@@ -58,7 +61,7 @@ int get_ith_position_of_free_spot_in_free_datablock_number_list_for_new_free_dat
 	big_int block_number;
 	int i;
 
-	for (i = 1; (i * sizeof(big_int)) <= BLOCK_SIZE; i++) {
+	for (i = 2; (big_int)i <= BLOCK_ID_LIST_LENGTH; i++) {
 		memcpy(&block_number, &datablock[(i-1) * sizeof(big_int)], sizeof(big_int));
 
 		if (block_number == 0) {
@@ -68,16 +71,24 @@ int get_ith_position_of_free_spot_in_free_datablock_number_list_for_new_free_dat
 	return -1;
 }
 
-// Shift all datablock numbers to the left in the buffer thus removing the second block number. Add 0s at the end of the buffer
-// The 1st block number corresponding to the pointer to the next datablock containing list of block numbers is maintained in the buffer
-void shift_datablock_numbers_in_buffer_to_left_except_pointer_to_next_block(char * datablock) {
-	int bytes_to_be_copied, position_of_last_block_number;
+// Browse the block numbers in datablock from right to left and stop when it find a non zero block number. 
+// (It avoid the 1st block number which is a pointer to next datablock containing free datablock numbers)
+// It returns it to the user and set 0 at the block number position
+big_int get_first_free_datablock_starting_from_end_of_block_and_set_0(char * datablock) {
+	int number_of_block_numbers, i;
+	big_int block_number;
 
-	bytes_to_be_copied = BLOCK_SIZE - 2 * sizeof(big_int);
-	memmove(&datablock[sizeof(big_int)], &datablock[2 * sizeof(big_int)], bytes_to_be_copied);
+	number_of_block_numbers = BLOCK_ID_LIST_LENGTH;
+	for (i = number_of_block_numbers; i > 1; i--) {
+		block_number = get_ith_block_number_in_datablock(datablock, i);
+		
+		if (block_number != 0) {
+			set_ith_block_number_in_datablock(datablock, i, 0);
+			return block_number;
+		}
+	}
 
-	position_of_last_block_number = BLOCK_SIZE - sizeof(big_int);
-	memset(&datablock[position_of_last_block_number], 0, sizeof(big_int)); // set 0s at the end of the buffer (empty block number)
+	return 0;
 }
 
 struct data_block * data_block_alloc(void) {
@@ -123,8 +134,7 @@ struct data_block * data_block_alloc(void) {
 		free_block_number_to_be_used = next_block_number;
 	}
 	else {
-		free_block_number_to_be_used = get_ith_block_number_in_datablock(read_buffer, 2);
-		shift_datablock_numbers_in_buffer_to_left_except_pointer_to_next_block(read_buffer);
+		free_block_number_to_be_used = get_first_free_datablock_starting_from_end_of_block_and_set_0(read_buffer);
 		write_block(position_of_first_datablock, read_buffer, BLOCK_SIZE);
 	}
 
@@ -146,7 +156,6 @@ struct data_block * bread(big_int data_block_nb) {
 	datablock = (struct data_block *) malloc(sizeof(struct data_block));
 	if (read_block(data_block_nb, datablock->block) == -1) {
 		free(datablock);
-		//printf("readblock returned -1");
 		return NULL;
 	}
 
