@@ -14,7 +14,7 @@ TEST_GROUP_RUNNER(TestDataBlocksHandler) {
 	RUN_TEST_CASE(TestDataBlocksHandler, get_ith_block_number_in_datablock__returns_ID_of_datablock_placed_in_ith_position_in_datablock);
 	RUN_TEST_CASE(TestDataBlocksHandler, set_ith_block_number_in_datablock__sets_datablock_ID_at_ith_position_in_datablock);
 	RUN_TEST_CASE(TestDataBlocksHandler, has_at_least_one_datablock_number_left_without_pointer__returns_0_if_there_is_only_pointer_to_next_datablock_or_no_pointer_at_all);
-	RUN_TEST_CASE(TestDataBlocksHandler, shift_datablock_numbers_in_buffer_to_left_except_pointer_to_next_block);
+	RUN_TEST_CASE(TestDataBlocksHandler, get_first_free_datablock_starting_from_end_of_block_and_set_0);
 	RUN_TEST_CASE(TestDataBlocksHandler, data_block_alloc__allocates_correctly_a_datablock);
 	RUN_TEST_CASE(TestDataBlocksHandler, is_datablock_full_of_free_datablock_numbers);
 	RUN_TEST_CASE(TestDataBlocksHandler, get_ith_position_of_free_spot_in_free_datablock_number_list_for_new_free_datablock);
@@ -96,35 +96,36 @@ TEST(TestDataBlocksHandler, has_at_least_one_datablock_number_left_without_point
 
 	set_ith_block_number_in_datablock(datablock, 2, block_number_1);
 	TEST_ASSERT_EQUAL(1, has_at_least_one_datablock_number_left_without_pointer(datablock));
+
+	bzero(datablock, BLOCK_SIZE);
+	set_ith_block_number_in_datablock(datablock, 145, block_number_1);
+	TEST_ASSERT_EQUAL(1, has_at_least_one_datablock_number_left_without_pointer(datablock));
 }
 
-TEST(TestDataBlocksHandler, shift_datablock_numbers_in_buffer_to_left_except_pointer_to_next_block) {
+TEST(TestDataBlocksHandler, get_first_free_datablock_starting_from_end_of_block_and_set_0) {
 	char datablock[BLOCK_SIZE];
-	int number_of_block_numbers_in_datablock;
 
 	bzero(datablock, BLOCK_SIZE); // Write zeros everywhere in block as it should be when block is empty
-	number_of_block_numbers_in_datablock = BLOCK_SIZE / sizeof(big_int);
 
-	// We set the position of the block number as the block number in the buffer for the purpose of the test
+	// No free block available
+	TEST_ASSERT_EQUAL(0, get_first_free_datablock_starting_from_end_of_block_and_set_0(datablock));
+
+	// No free block available because 1st block number is pointer to next datablock so cannot be used
+	set_ith_block_number_in_datablock(datablock, 1, 5678);
+	TEST_ASSERT_EQUAL(0, get_first_free_datablock_starting_from_end_of_block_and_set_0(datablock));
+
 	int block_number;
-	for (block_number = 1; block_number <= number_of_block_numbers_in_datablock; block_number++) {
-		set_ith_block_number_in_datablock(datablock, block_number, (big_int)block_number);
+	for (block_number = 2; block_number <= 143; block_number++) {
+		set_ith_block_number_in_datablock(datablock, block_number, (big_int)(block_number+13));
 	}
 
-	shift_datablock_numbers_in_buffer_to_left_except_pointer_to_next_block(datablock);
+	TEST_ASSERT_EQUAL(156, get_first_free_datablock_starting_from_end_of_block_and_set_0(datablock));
 
-	// Assert 1st block didn't change
-	TEST_ASSERT_EQUAL(1, get_ith_block_number_in_datablock(datablock, 1));
-
-	// Assert all the other blocks left shifted (block number 2 disappeared)
-	int i;
-	for (i = 3; i <= number_of_block_numbers_in_datablock; i++) {
-		TEST_ASSERT_EQUAL(i, get_ith_block_number_in_datablock(datablock, i-1));
-	}
-
-	// Make sure that last spot for a block number is empty (only 0s)
-	TEST_ASSERT_EQUAL(0, get_ith_block_number_in_datablock(datablock, number_of_block_numbers_in_datablock));
+	TEST_ASSERT_EQUAL(0, get_ith_block_number_in_datablock(datablock, 143));
+	TEST_ASSERT_EQUAL(155, get_ith_block_number_in_datablock(datablock, 142));
+	TEST_ASSERT_EQUAL(0, get_ith_block_number_in_datablock(datablock, 144));
 }
+
 
 TEST(TestDataBlocksHandler, data_block_alloc__allocates_correctly_a_datablock) {
 	int first_datablock_position;
@@ -154,8 +155,8 @@ TEST(TestDataBlocksHandler, data_block_alloc__allocates_correctly_a_datablock) {
 	set_ith_block_number_in_datablock(datablock_buffer, 1, pointer_next_free_datablock_list);
 
 	// Set 1st free datablock number
-	set_ith_block_number_in_datablock(datablock_buffer, 2, first_free_datablock_number);
-	set_ith_block_number_in_datablock(datablock_buffer, 3, second_free_datablock_number);
+	set_ith_block_number_in_datablock(datablock_buffer, 3, first_free_datablock_number);
+	set_ith_block_number_in_datablock(datablock_buffer, 2, second_free_datablock_number);
 
 	// We write to disk the datablock containing the list of free datablocks
 	write_block(first_datablock_position, datablock_buffer, BLOCK_SIZE);
@@ -164,7 +165,7 @@ TEST(TestDataBlocksHandler, data_block_alloc__allocates_correctly_a_datablock) {
 	memset(datablock_buffer2, 0, BLOCK_SIZE); // Set 0s to the datablock before setting datablock numbers
 	first_free_datablock_number_in_second_list = first_datablock_position + 11;
 	set_ith_block_number_in_datablock(datablock_buffer2, 1, 0); // We say that there's no pointer to a 3rd datablock.
-	set_ith_block_number_in_datablock(datablock_buffer2, 2, first_free_datablock_number_in_second_list);
+	set_ith_block_number_in_datablock(datablock_buffer2, BLOCK_ID_LIST_LENGTH, first_free_datablock_number_in_second_list);
 
 	// We write to disk the datablock containing the 2nd list of free datablocks
 	write_block(pointer_next_free_datablock_list, datablock_buffer2, BLOCK_SIZE);
@@ -239,6 +240,10 @@ TEST(TestDataBlocksHandler, is_datablock_full_of_free_datablock_numbers) {
 	TEST_ASSERT_EQUAL(1, is_datablock_full_of_free_datablock_numbers(full_datablock));
 	TEST_ASSERT_EQUAL(0, is_datablock_full_of_free_datablock_numbers(almost_full_datablock));
 	TEST_ASSERT_EQUAL(0, is_datablock_full_of_free_datablock_numbers(empty_datablock));
+
+	// We put one datablock number lost at the end of the block
+	set_ith_block_number_in_datablock(full_datablock, BLOCK_ID_LIST_LENGTH, 122);
+	TEST_ASSERT_EQUAL(0, is_datablock_full_of_free_datablock_numbers(empty_datablock));	
 }
 
 TEST(TestDataBlocksHandler, get_ith_position_of_free_spot_in_free_datablock_number_list_for_new_free_datablock) {
@@ -273,7 +278,11 @@ TEST(TestDataBlocksHandler, get_ith_position_of_free_spot_in_free_datablock_numb
 	TEST_ASSERT_EQUAL(-1, get_ith_position_of_free_spot_in_free_datablock_number_list_for_new_free_datablock(full_datablock));
 	TEST_ASSERT_EQUAL(last_block_rank_position, get_ith_position_of_free_spot_in_free_datablock_number_list_for_new_free_datablock(almost_full_datablock));
 	TEST_ASSERT_EQUAL((last_ith_filled + 1), get_ith_position_of_free_spot_in_free_datablock_number_list_for_new_free_datablock(free_spots_datablock));
-	TEST_ASSERT_EQUAL(1, get_ith_position_of_free_spot_in_free_datablock_number_list_for_new_free_datablock(empty_datablock));
+	TEST_ASSERT_EQUAL(2, get_ith_position_of_free_spot_in_free_datablock_number_list_for_new_free_datablock(empty_datablock));
+
+	// We put a 0 in first datablock number position (position of pointer and see it doesn't affect results)
+	set_ith_block_number_in_datablock(free_spots_datablock, 1, 0);
+	TEST_ASSERT_EQUAL((last_ith_filled + 1), get_ith_position_of_free_spot_in_free_datablock_number_list_for_new_free_datablock(free_spots_datablock));
 }
 
 TEST(TestDataBlocksHandler, data_block_free) {
@@ -364,7 +373,7 @@ TEST(TestDataBlocksHandler, data_block_free) {
 	TEST_ASSERT_EQUAL(3, get_ith_block_number_in_datablock(read_buffer, 3));
 	TEST_ASSERT_EQUAL(8046, get_ith_block_number_in_datablock(read_buffer, BLOCK_SIZE/sizeof(big_int)));
 
-	// Make sure 3rd datablock contain teh remaining datablock numbers
+	// Make sure 3rd datablock contain the remaining datablock numbers
 	read_block(pointer_to_second_datablock, read_buffer);
 	TEST_ASSERT_EQUAL(pointer_to_third_datablock, get_ith_block_number_in_datablock(read_buffer, 1));
 	TEST_ASSERT_EQUAL(8567, get_ith_block_number_in_datablock(read_buffer, 2));

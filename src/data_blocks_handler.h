@@ -16,6 +16,6 @@ void set_ith_block_number_in_datablock(char * datablock, int i, big_int block_nu
 int has_at_least_one_datablock_number_left_without_pointer(char * datablock);
 int is_datablock_full_of_free_datablock_numbers(char * datablock);
 int get_ith_position_of_free_spot_in_free_datablock_number_list_for_new_free_datablock(char * datablock);
-void shift_datablock_numbers_in_buffer_to_left_except_pointer_to_next_block(char * datablock);
+big_int get_first_free_datablock_starting_from_end_of_block_and_set_0(char * datablock);
 
 #endif
