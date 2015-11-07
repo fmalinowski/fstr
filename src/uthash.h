@@ -1,3 +1,5 @@
+#pragma GCC diagnostic ignored "-Wswitch-default"
+
 /*
 Copyright (c) 2003-2014, Troy D. Hanson     http://troydhanson.github.com/uthash/
 All rights reserved.
