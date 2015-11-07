@@ -409,10 +409,10 @@ TEST(TestDataBlocksHandler, bread) {
 
 	init_disk_emulator();
 
+
 	read_block(8201, read_buffer);
 	for (i = 0; i < BLOCK_SIZE; i++) {
 		buffer[i] = 'd';
-		TEST_ASSERT_FALSE(read_buffer[i] == 'd');
 	}
 
 	write_block(8201, buffer, BLOCK_SIZE);
