@@ -72,9 +72,9 @@ int get_ith_position_of_free_spot_in_free_datablock_number_list_for_new_free_dat
 // The 1st block number corresponding to the pointer to the next datablock containing list of block numbers is maintained in the buffer
 void shift_datablock_numbers_in_buffer_to_left_except_pointer_to_next_block(char * datablock) {
 	int bytes_to_be_copied, position_of_last_block_number;
-	
+
 	bytes_to_be_copied = BLOCK_SIZE - 2 * sizeof(big_int);
-	memcpy(&datablock[sizeof(big_int)], &datablock[2 * sizeof(big_int)], bytes_to_be_copied);
+	memmove(&datablock[sizeof(big_int)], &datablock[2 * sizeof(big_int)], bytes_to_be_copied);
 
 	position_of_last_block_number = BLOCK_SIZE - sizeof(big_int);
 	memset(&datablock[position_of_last_block_number], 0, sizeof(big_int)); // set 0s at the end of the buffer (empty block number)
