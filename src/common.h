@@ -58,7 +58,13 @@ struct superblock {
 	big_int num_free_inodes;
 	big_int free_inodes_cache[FREE_INODES_CACHE_SIZE];
 	big_int next_free_inode;
-} /* shared superblock object */ superblock;
+
+	// methods
+	// This method should be called everytime update is made to superblock
+	int (*commit)(void);
+};
+
+extern struct superblock superblock;
 
 struct inode {
 	int inode_id;
@@ -83,6 +89,8 @@ struct data_block {
 	big_int data_block_id;
 	char block[BLOCK_SIZE];
 };
+
+int commit_superblock(void);
 
 int write_block_offset(big_int block_id, void *buffer, size_t buffer_size, int offset);
 

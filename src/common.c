@@ -1,6 +1,14 @@
 #include "common.h"
 #include "disk_emulator.h"
 
+struct superblock superblock = {
+	.commit = commit_superblock
+};
+
+int commit_superblock(void) {
+	return write_block(0, &superblock, sizeof(struct superblock));
+}
+	
 int write_block_offset(big_int block_id, void *buffer, size_t buffer_size, int offset) {
 	if(offset + buffer_size > BLOCK_SIZE) {
 		fprintf(stderr, "Data too big for a block. offset: %d, buffer_size: %ld\n", offset, buffer_size);

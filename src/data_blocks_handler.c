@@ -1,11 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>
-
 #include "common.h"
 #include "disk_emulator.h"
-
 #include "data_blocks_handler.h"
 
 
@@ -144,8 +138,7 @@ struct data_block * data_block_alloc(void) {
 	write_block(free_block_number_to_be_used, datablock->block, BLOCK_SIZE); // Set 0s the block on disk too
 
 	superblock.num_free_blocks--; // Decrement the number of free data blocks
-
-	// mark_superblock_modified();
+	superblock.commit();
 
 	return datablock;
 }
@@ -211,7 +204,7 @@ int data_block_free(struct data_block * datablock) {
 	}
 
 	superblock.num_free_blocks++;
-	// mark_superblock_modified();
+	superblock.commit();
 
 	return 0;
 }
