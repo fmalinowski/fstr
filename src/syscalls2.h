@@ -7,6 +7,8 @@
 
 // The methods below use user file descriptor tables
 
+#define FD_NOT_USED -1
+
 typedef enum {
 	READ,
 	WRITE
@@ -22,6 +24,7 @@ struct file_descriptor_entry {
 struct file_descriptor_table {
 	int pid;
 	int total_descriptors;
+	int used_descriptors;
 	struct file_descriptor_entry *entries;
 	UT_hash_handle hh;
 }; // We need to use dynamic allocation with that hash table otherwise it doesn't work correctly
@@ -35,10 +38,15 @@ int close(int fildes);
 
 
 // UTILITIES
+struct file_descriptor_table * allocate_file_descriptor_table(int pid);
 struct file_descriptor_table * get_file_descriptor_table(int pid);
-void set_file_descriptor_table(int pid, struct file_descriptor_table * table);
 void delete_file_descriptor_table(int pid);
-struct file_descriptor_entry * get_file_descriptor_entry(int fd);
-void set_file_descriptor_entry(int pid, struct file_descriptor_entry * entry);
+
+int find_available_fd(int pid);
+
+struct file_descriptor_entry * allocate_file_descriptor_entry(int pid);
+struct file_descriptor_entry * get_file_descriptor_entry(int pid, int fd);
+void delete_file_descriptor_entry(int pid, int fd);
+
 
 #endif
