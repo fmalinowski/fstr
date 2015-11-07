@@ -3,7 +3,7 @@
 CC = gcc
 
 CFLAGS += -Wall
-CFLAGS += `pkg-config fuse --cflags --libs`
+CFLAGS += -g `pkg-config fuse --cflags --libs`
 
 CFLAGS += -Wextra
 CFLAGS += -Werror 

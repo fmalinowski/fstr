@@ -2,15 +2,15 @@
 #include "disk_emulator.h"
 
 void create_fs(void) {
-	LOGD("Creating FSTR...");
+    LOGD("Creating FSTR...");
 
-	create_superblock();
+    create_superblock();
 
-	create_inodes();
+    create_inodes();
 
-	create_free_blocks();
+    create_free_blocks();
 
-	LOGD("Finished creating FSTR!");
+    LOGD("Finished creating FSTR!");
 }
 
 // Write empty superblock to disk
@@ -21,16 +21,16 @@ int create_superblock(void) {
     int i;
     for(i = 0; i < FREE_BLOCKS_CACHE_SIZE; i++) {
         // empty cache list
-    	superblock.free_blocks_cache[i] = 0;
+        superblock.free_blocks_cache[i] = 0;
     }
     superblock.next_free_block_list = 1 + NUM_INODE_BLOCKS; // starts right after inode blocks
 
     superblock.num_free_inodes = NUM_INODES;
     for(i = 0; i < FREE_INODES_CACHE_SIZE; i++) {
         // empty cache list
-    	superblock.free_inodes_cache[i] = 0;
+        superblock.free_inodes_cache[i] = 0;
     }
-    superblock.next_free_inode = 1; // first free inode number; INODE_HANDLER IS CURRENTLY NOT TOUCHING THIS VALUE
+    superblock.next_free_inode = 1; // first free inode number
 
     LOGD("FS size: %lld", superblock.fs_size);
     LOGD("Block size: %d", BLOCK_SIZE);
@@ -50,25 +50,25 @@ int create_inodes(void) {
 
     int i, j;
     for(i = 0; i < NUM_INODES; i++){
-    	inode.inode_id = i;
-		inode.uid = 0;
+        inode.inode_id = i + 1;
+        inode.uid = 0;
         inode.gid = 0;
-		inode.type = TYPE_FREE;
-		inode.last_modified_file = 0;
-		inode.last_accessed_file = 0;
-		inode.last_modified_inode = 0;
-		inode.links_nb = 0;
+        inode.type = TYPE_FREE;
+        inode.last_modified_file = 0;
+        inode.last_accessed_file = 0;
+        inode.last_modified_inode = 0;
+        inode.links_nb = 0;
 
-		for(j = 0; j < NUM_DIRECT_BLOCKS; j++) {
-			inode.direct_blocks[j] = 0;
-		}
-		inode.single_indirect_block = 0;
-		inode.double_indirect_block = 0;
-		inode.triple_indirect_block = 0;
+        for(j = 0; j < NUM_DIRECT_BLOCKS; j++) {
+            inode.direct_blocks[j] = 0;
+        }
+        inode.single_indirect_block = 0;
+        inode.double_indirect_block = 0;
+        inode.triple_indirect_block = 0;
 
         if(write_inode(&inode)) {
-        	fprintf(stderr, "Failed to write inodes\n");
-        	return -1;
+            fprintf(stderr, "Failed to write inodes\n");
+            return -1;
         }
     }
 
@@ -76,9 +76,9 @@ int create_inodes(void) {
 }
 
 int write_inode(struct inode *inode) {
-	big_int block_id = ((inode->inode_id - 1) / (BLOCK_SIZE / INODE_SIZE)) + 1;
-	int offset = ((inode->inode_id - 1) % (BLOCK_SIZE / INODE_SIZE)) * INODE_SIZE;
-	return write_block_offset(block_id, inode, sizeof(struct inode), offset);
+    big_int block_id = ((inode->inode_id - 1) / (BLOCK_SIZE / INODE_SIZE)) + 1;
+    int offset = ((inode->inode_id - 1) % (BLOCK_SIZE / INODE_SIZE)) * INODE_SIZE;
+    return write_block_offset(block_id, inode, sizeof(struct inode), offset);
 }
 
 int create_free_blocks(void) {
@@ -116,5 +116,5 @@ int create_free_blocks(void) {
         }
     }
 
-	return 0;
+    return 0;
 }
