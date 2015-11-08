@@ -2,6 +2,8 @@
 #include "data_blocks_handler.h"
 // ASSUMING INODE NUMBERS START FROM 1
 
+
+
 struct inode* iget(big_int inode_number){
 	struct inode * target;
 	int block_number_of_inode;
@@ -133,7 +135,9 @@ int iput(struct inode * inod){
 		}
 		else{
 			// Else, write the inode block to disk to save changes
-			blok3 = bread(ILIST_BEGIN + ((inod->inode_id - 1)/(BLOCK_SIZE/INODE_SIZE)));
+
+			blok3 = bread(ILIST_BEGIN + ((inod->inode_id - 1) / (BLOCK_SIZE/INODE_SIZE)));
+
 			if(blok3 == NULL){
 				return -1;
 			}
