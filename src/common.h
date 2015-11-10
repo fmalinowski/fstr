@@ -2,6 +2,7 @@
 #define _COMMON_H_
 
 #define FUSE_USE_VERSION 26
+#define __STDC_FORMAT_MACROS 1
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -15,6 +16,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <dirent.h>
+#include <inttypes.h>
 
 #ifdef DEBUG
 #define LOGD(A, ...) printf("%s:%d " A "\n", __FILE__, __LINE__, ##__VA_ARGS__);

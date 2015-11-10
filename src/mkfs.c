@@ -32,13 +32,13 @@ int create_superblock(void) {
     }
     superblock.next_free_inode = 1; // first free inode number
 
-    LOGD("FS size: %lld", superblock.fs_size);
+    LOGD("FS size: %" PRIu64 "", superblock.fs_size);
     LOGD("Block size: %d", BLOCK_SIZE);
     LOGD("No. of blocks: %d", NUM_BLOCKS);
     LOGD("inode size: %d", INODE_SIZE);
     LOGD("No. of inodes: %d", NUM_INODES);
-    LOGD("No. of inode blocks: %lld", NUM_INODE_BLOCKS);
-    LOGD("No. of free blocks: %lld", superblock.num_free_blocks);
+    LOGD("No. of inode blocks: %lu", NUM_INODE_BLOCKS);
+    LOGD("No. of free blocks: %" PRIu64 "", superblock.num_free_blocks);
     LOGD("Size of struct superblock: %ld", sizeof(struct superblock));
     LOGD("Size of struct inode: %ld", sizeof(struct inode));
 
