@@ -223,3 +223,7 @@ int ifree(struct inode * inod){
 	LOGD("IFREE: bwrite was unsuccessful");
 	return -1;
 }
+
+void free_inode(struct inode * inod) {
+	free(inod);
+}
