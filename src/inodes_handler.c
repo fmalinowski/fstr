@@ -137,7 +137,7 @@ int iput(struct inode * inod){
 			if(blok3 == NULL){
 				return -1;
 			}
-			inode_offset_in_block = (inod->inode_id - 1) % (BLOCK_SIZE/INODE_SIZE);	
+			inode_offset_in_block = ((inod->inode_id - 1) % (BLOCK_SIZE/INODE_SIZE)) * INODE_SIZE;	
 			memcpy(&(blok3->block[inode_offset_in_block]), inod, sizeof(struct inode));
 			if(bwrite(blok3) == 0){
 				return 0; // Success	

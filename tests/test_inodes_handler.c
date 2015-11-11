@@ -12,7 +12,7 @@ TEST_GROUP_RUNNER(TestInodesHandler) {
 	RUN_TEST_CASE(TestInodesHandler, test_ialloc_works_correctly);
 	RUN_TEST_CASE(TestInodesHandler, test_ifree_works_correctly);
 	RUN_TEST_CASE(TestInodesHandler, test_iput_works_correctly);
-	// RUN_TEST_CASE(TestInodesHandler, test_2_allocs_and_2_saves);
+	RUN_TEST_CASE(TestInodesHandler, test_2_allocs_and_2_saves);
 }
 
 TEST_GROUP(TestInodesHandler);
