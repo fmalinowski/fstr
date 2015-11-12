@@ -14,14 +14,14 @@ struct inode* iget(big_int inode_number){
 		LOGD("IGET: invalid inode number");
 		return NULL;
 	}
-
+	//printf("going to get inode number %d", (int)inode_number);
 	block_number_of_inode = ILIST_BEGIN + ((inode_number - 1) / (BLOCK_SIZE / INODE_SIZE));
 	
 	inode_offset_in_block = ((inode_number - 1) % (BLOCK_SIZE / INODE_SIZE)) * INODE_SIZE;
 	//printf("block number of inode %d, inode offset in block %d", block_number_of_inode, inode_offset_in_block);
 	//Read from disk
 	inode_block = bread(block_number_of_inode);
-	
+	//printf("block number read is %d", (int)inode_block->data_block_id);
 	//block read error
 	if(!inode_block){
 		return NULL;
@@ -29,130 +29,39 @@ struct inode* iget(big_int inode_number){
  	target = (struct inode*) malloc(sizeof(struct inode));
 	if(target != NULL){
 		memcpy(target, &(inode_block->block[inode_offset_in_block]), sizeof(struct inode));
+		LOGD("returning target inode id %d", target->inode_id);
 		return target; // Success
 	}
 	LOGD("IGET: target is null");
 	return NULL;
 }
 
-int iput(struct inode * inod){
-		struct data_block blok;
-		struct data_block blok2;
-		struct data_block *blok3;
-		struct data_block *blok4;
-		struct data_block *blok5;
+int iput(struct inode * inod) {
+	if(inod->links_nb == 0) {
+		// Free the inode and data blocks
+		struct data_block data_block;
+		big_int total_blocks = inod->num_blocks;
+		big_int i;
+		for(i = 0; i < total_blocks; ++i) {
+			big_int block_id = get_and_set_block_id(inod, i, 0);
+			if(block_id > 0) {
+				data_block.data_block_id = block_id;
+				data_block_free(&data_block);
+			}
+		}
 		
-		big_int block_number;
-		big_int inode_offset_in_block;
-		unsigned int i, j, k, p;
+		return ifree(inod);
+	}
 
-		if(inod->links_nb == 0){
-			for(j = 0; j < 16; j++){
-				blok.data_block_id = inod->direct_blocks[j];
-				if(blok.data_block_id == 0){
-					LOGD("IPUT: not freeing block 0");
-					continue;
-				}
-				data_block_free(&blok);  // free direct data blocks
-			}
-			
-			if(inod->single_indirect_block != 0){
-				blok4 = bread(inod->single_indirect_block);
-				if(blok4 != NULL){
-					for(i = 0; i < BLOCK_SIZE/sizeof(big_int); i++){
-						memcpy(&block_number, &(blok4->block[i*sizeof(big_int)]), sizeof(big_int));
-						if(block_number != 0){
-							blok2.data_block_id = block_number;
-							data_block_free(&blok2);
-						}
-					}
-					data_block_free(blok4);
-				}
-			}
-
-			if(inod->double_indirect_block != 0){
-				blok5 = bread(inod->double_indirect_block);
-				
-				if(blok5 != NULL){
-					for(i = 0; i < BLOCK_SIZE/sizeof(big_int); i++){
-						memcpy(&block_number, &(blok5->block[i*sizeof(big_int)]), sizeof(big_int));
-						if(block_number != 0){
-							blok3 = bread(block_number);
-							if(blok3 != NULL){
-								for(k = 0; k < BLOCK_SIZE/sizeof(big_int); k++){
-									memcpy(&block_number, &(blok3->block[k*sizeof(big_int)]), sizeof(big_int));
-									if(block_number != 0){
-										blok2.data_block_id = block_number;
-										data_block_free(&blok2);
-									}
-								}
-								data_block_free(blok3);
-							}
-						}
-					}
-					data_block_free(blok5);
-				}
-			}
-
-			if(inod->triple_indirect_block != 0){
-				blok5 = bread(inod->triple_indirect_block);
-				if(blok5 != NULL){
-					for(i = 0; i < BLOCK_SIZE/sizeof(big_int); i++){
-						memcpy(&block_number, &(blok5->block[i*sizeof(big_int)]), sizeof(big_int));
-						if(block_number != 0){
-							blok3 = bread(block_number);
-							if(blok3 != NULL){
-								for(k = 0; k < BLOCK_SIZE/sizeof(big_int); k++){
-									memcpy(&block_number, &(blok3->block[k*sizeof(big_int)]), sizeof(big_int));
-									if(block_number != 0){
-										blok4 = bread(block_number);
-								
-										if(blok4 != NULL){
-											for(p = 0; p < BLOCK_SIZE/sizeof(big_int); p++){
-												memcpy(&block_number, &(blok4->block[p*sizeof(big_int)]), sizeof(big_int));
-												if(block_number != 0){
-													blok2.data_block_id = block_number;
-													data_block_free(&blok2);
-												}
-											}
-											data_block_free(blok4);
-										}
-							
-										else{
-											//printf("blo4 is null");
-										}
-									}
-								}
-								data_block_free(blok3);
-							}
-						}
-					}
-					data_block_free(blok5);
-				}
-			}
-			ifree(inod); //free inode
-			return 0; // Success
-		}
-		else{
-			// Else, write the inode block to disk to save changes
-
-			blok3 = bread(ILIST_BEGIN + ((inod->inode_id - 1) / (BLOCK_SIZE/INODE_SIZE)));
-
-			if(blok3 == NULL){
-				return -1;
-			}
-			inode_offset_in_block = ((inod->inode_id - 1) % (BLOCK_SIZE/INODE_SIZE)) * INODE_SIZE;	
-			memcpy(&(blok3->block[inode_offset_in_block]), inod, sizeof(struct inode));
-			if(bwrite(blok3) == 0){
-				return 0; // Success	
-			}
-			else{
-				LOGD("IPUT: bwrite was unsuccessful");
-				return -1;
-			}
-		}
-		LOGD("IPUT: something went wrong");
+	// Else, write the inode block to disk to save changes
+	struct data_block *blok = bread(ILIST_BEGIN + (inod->inode_id/(BLOCK_SIZE/INODE_SIZE)));
+	if(blok == NULL){
+		fprintf(stderr, "failed to read block\n");
 		return -1;
+	}
+	big_int inode_offset_in_block = ((inod->inode_id - 1) % (BLOCK_SIZE/INODE_SIZE)) * INODE_SIZE;
+	memcpy(&(blok->block[inode_offset_in_block]), inod, sizeof(struct inode));
+	return bwrite(blok);
 }
 
 int next_free_inode_number(void){ // It's correctness depends on how mkfs organizes stuff
@@ -201,7 +110,13 @@ struct inode* ialloc(void){  // THIS DOES NOT SET THE FILETYPE OF INODE. MUST BE
 	memcpy(&(blok3->block[inode_offset_in_block]), inod, sizeof(struct inode));
 	
 	if(bwrite(blok3) == 0){
-		return inod;
+		if(commit_superblock() == 0){
+			return inod;
+		}
+		else{
+			LOGD("IPUT: superblock commit was unsuccessful");		
+			return NULL;
+		}
 	}
 	LOGD("IPUT: bwrite was unsuccessful");
 	return NULL;
@@ -222,12 +137,14 @@ int ifree(struct inode * inod){
 	memcpy(&(blok3->block[inode_offset_in_block]), inod, sizeof(struct inode));
 	
 	if(bwrite(blok3) == 0){
-		return 0;
+		if(commit_superblock() == 0){
+			return 0;
+		}
+		else{
+			LOGD("IPUT: superblock commit was unsuccessful");		
+			return -1;
+		}	
 	}
 	LOGD("IFREE: bwrite was unsuccessful");
 	return -1;
-}
-
-void free_inode(struct inode * inod) {
-	free(inod);
 }

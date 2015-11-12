@@ -4,11 +4,13 @@
 #include "common.h"
 #include "disk_emulator.h"
 #include "mkfs.h"
+#include "inodes_handler.h"
 
 TEST_GROUP_RUNNER(TestMkfs) {
 	RUN_TEST_CASE(TestMkfs, superblock_is_written_correctly);
 	RUN_TEST_CASE(TestMkfs, inodes_are_written_contiguously_after_superblock);
 	RUN_TEST_CASE(TestMkfs, free_lists_are_correctly_initialized);
+	RUN_TEST_CASE(TestMkfs, create_fs);
 }
 
 TEST_GROUP(TestMkfs);
@@ -77,4 +79,29 @@ TEST(TestMkfs, free_lists_are_correctly_initialized) {
 	}
 
 	TEST_ASSERT_EQUAL(superblock.num_free_blocks, free_blocks_count);
+}
+
+TEST(TestMkfs, create_fs) {
+	create_fs();
+
+	struct inode *root_inode = iget(ROOT_INODE_NUMBER);
+	TEST_ASSERT_TRUE(NULL != root_inode);
+
+	TEST_ASSERT_EQUAL(ROOT_INODE_NUMBER, root_inode->inode_id);
+	TEST_ASSERT_EQUAL(1, root_inode->links_nb);
+	TEST_ASSERT_EQUAL(1, root_inode->num_blocks);
+	TEST_ASSERT_EQUAL(TYPE_DIRECTORY, root_inode->type);
+	TEST_ASSERT_TRUE(root_inode->direct_blocks[0] != 0);
+
+	struct dir_block dir_block;
+	read_block(root_inode->direct_blocks[0], &dir_block);
+
+	TEST_ASSERT_EQUAL(ROOT_INODE_NUMBER, dir_block.inode_ids[0]);
+	TEST_ASSERT_EQUAL(0, strcmp(".", dir_block.names[0]));
+
+	TEST_ASSERT_EQUAL(ROOT_INODE_NUMBER, dir_block.inode_ids[1]);
+	TEST_ASSERT_EQUAL(0, strcmp("..", dir_block.names[1]));
+
+	TEST_ASSERT_EQUAL(0, dir_block.inode_ids[2]);
+	TEST_ASSERT_EQUAL(0, strcmp("", dir_block.names[2]));
 }
