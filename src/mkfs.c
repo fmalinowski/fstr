@@ -1,16 +1,31 @@
 #include "mkfs.h"
 #include "disk_emulator.h"
 
-void create_fs(void) {
+int create_fs(void) {
     LOGD("Creating FSTR...");
 
-    create_superblock();
+    if(create_superblock() != 0) {
+        fprintf(stderr, "failed to create superblock\n");
+        return -1;
+    }
 
-    create_inodes();
+    if(create_inodes() != 0) {
+        fprintf(stderr, "failed to create inodes\n");
+        return -1;   
+    }
 
-    create_free_blocks();
+    if(create_free_blocks() != 0)  {
+        fprintf(stderr, "failed to create free block lists\n");
+        return -1;   
+    }
+
+    if(mkdir(PATH_DELIMITER, 0) != 0)  {
+        fprintf(stderr, "failed to create mkdir root\n");
+        return -1;   
+    }
 
     LOGD("Finished creating FSTR!");
+    return 0;
 }
 
 // Write empty superblock to disk
@@ -46,25 +61,12 @@ int create_superblock(void) {
 }
 
 int create_inodes(void) {
-    struct inode inode;
-
-    int i, j;
+    int i;
     for(i = 0; i < NUM_INODES; i++){
-        inode.inode_id = i + 1;
-        inode.uid = 0;
-        inode.gid = 0;
-        inode.type = TYPE_FREE;
-        inode.last_modified_file = 0;
-        inode.last_accessed_file = 0;
-        inode.last_modified_inode = 0;
-        inode.links_nb = 0;
-
-        for(j = 0; j < NUM_DIRECT_BLOCKS; j++) {
-            inode.direct_blocks[j] = 0;
-        }
-        inode.single_indirect_block = 0;
-        inode.double_indirect_block = 0;
-        inode.triple_indirect_block = 0;
+        struct inode inode = {
+            .inode_id = i + 1,
+            .type = TYPE_FREE
+        };
 
         if(write_inode(&inode)) {
             fprintf(stderr, "Failed to write inodes\n");

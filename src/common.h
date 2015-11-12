@@ -15,9 +15,8 @@
 #include <time.h>
 #include <unistd.h>
 #include <math.h>
-#include <dirent.h>
 #include <inttypes.h>
-
+#include <libgen.h>
 
 #ifdef DEBUG
 #define LOGD(A, ...) printf("%s:%d " A "\n", __FILE__, __LINE__, ##__VA_ARGS__);
@@ -28,7 +27,7 @@
 #define FREE_BLOCKS_CACHE_SIZE 0
 #define FREE_INODES_CACHE_SIZE 0
 
-#define FS_SIZE 512 * 1024 * 1024 // 512MB
+#define FS_SIZE (512 * 1024 * 1024) // 512MB
 #define BLOCK_SIZE 4096 // 4KB
 #define INODE_SIZE 256
 #define NUM_INODES ((int) (0.1 * NUM_BLOCKS))
@@ -39,6 +38,10 @@
 #define NUM_BLOCKS (FS_SIZE / BLOCK_SIZE)
 #define NUM_INODE_BLOCKS ((big_int) ceil((NUM_INODES * INODE_SIZE) / (float) BLOCK_SIZE))
 #define BLOCK_ID_LIST_LENGTH (BLOCK_SIZE / sizeof(big_int))
+
+#define NAMEI_ENTRY_SIZE 64
+#define PATH_DELIMITER "/"
+#define ROOT_INODE_NUMBER 1
 
 typedef uint64_t big_int;
 
@@ -73,6 +76,7 @@ struct inode {
 	int inode_id;
 	uid_t uid;
 	gid_t gid;
+	mode_t mode;
 	file_type type;
 	time_t last_modified_file;
 	time_t last_accessed_file;
@@ -82,6 +86,7 @@ struct inode {
 	big_int single_indirect_block;
 	big_int double_indirect_block;
 	big_int triple_indirect_block;
+	big_int num_blocks;
 };
 
 struct block_id_list {
@@ -93,8 +98,30 @@ struct data_block {
 	char block[BLOCK_SIZE];
 };
 
+struct dir_block {
+    int inode_ids[BLOCK_SIZE / NAMEI_ENTRY_SIZE];
+    char names[BLOCK_SIZE / NAMEI_ENTRY_SIZE][NAMEI_ENTRY_SIZE - sizeof(int)];
+};
+
 int commit_superblock(void);
 
 int write_block_offset(big_int block_id, void *buffer, size_t buffer_size, int offset);
+
+// Format dir_block and add entries for '.' and '..'
+int init_dir_block(struct dir_block *dir_block, int dir_inode_id, int parent_inode_id);
+
+// Insert inode entry in parent's inode. Might alloc dir_block if required
+int add_entry_to_parent(struct inode *parent_inode, int inode_id, const char *name);
+
+// Insert inode entry to first available position in dir_block
+int add_entry_to_dir_block(struct dir_block *dir_block, int inode_id, const char *name);
+
+// Remove inode entry from dir_block
+int remove_entry_from_dir_block(struct dir_block *dir_block, int inode_id);
+
+// Get block_id which is at position 'index'. Set block_id too if value > 0
+big_int get_and_set_block_id(struct inode *inode, big_int index, big_int value);
+
+int get_parent_inode_id(const char *path);
 
 #endif

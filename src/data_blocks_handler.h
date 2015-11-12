@@ -4,6 +4,7 @@
 #include "common.h"
 
 
+// TODO Can we just return block id?
 struct data_block * data_block_alloc(void); // Allocate a new data block
 struct data_block * bread(big_int data_block_nb); // Read the data block from disk
 int bwrite(struct data_block *); // Write the data block to disk

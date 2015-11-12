@@ -1,4 +1,4 @@
 TODO
 
 - Use superblock cache lists for inodes and blocks
-- Getter/Setter for superblock members
+- For ialloc() and block_alloc(), we find a free space and write it too. Do we need that?
