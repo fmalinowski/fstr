@@ -1,4 +1,3 @@
-
 .PHONY: clean default tests
 
 CC = gcc

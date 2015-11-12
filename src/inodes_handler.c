@@ -2,8 +2,6 @@
 #include "data_blocks_handler.h"
 // ASSUMING INODE NUMBERS START FROM 1
 
-
-
 struct inode* iget(big_int inode_number){
 	struct inode * target;
 	int block_number_of_inode;

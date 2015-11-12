@@ -42,7 +42,6 @@ TEST(TestInodesHandler, test_iget_works_correctly){
 
 
 TEST(TestInodesHandler, test_ialloc_works_correctly){
-	int x;
 	struct inode * inod = ialloc();
 	struct inode * inod2 = ialloc();
 	TEST_ASSERT_TRUE(inod != NULL);
@@ -54,20 +53,13 @@ TEST(TestInodesHandler, test_ialloc_works_correctly){
 	TEST_ASSERT_TRUE(inod->inode_id <= NUM_INODES);
 	TEST_ASSERT_TRUE(inod2->inode_id <= NUM_INODES);
 	TEST_ASSERT_TRUE(inod->inode_id != inod2->inode_id);
-	inod->links_nb = 2;
-	x = inod->inode_id;
-	printf("x is %d", inod->inode_id);
-	TEST_ASSERT_TRUE(0 == iput(inod));
-	struct inode *inod3 = iget(x);
-	TEST_ASSERT_TRUE(2 == inod3->links_nb);
 }
 
 
 TEST(TestInodesHandler, test_ifree_works_correctly){
 	struct inode * inod = ialloc();
 	TEST_ASSERT_TRUE(inod != NULL);
-	inod->links_nb = 0;
-	TEST_ASSERT_EQUAL(0, iput(inod));
+	TEST_ASSERT_EQUAL(0, ifree(inod));
 }
 
 TEST(TestInodesHandler, test_iput_works_correctly){ // Wait for Francois's reply. 
