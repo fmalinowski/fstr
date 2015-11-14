@@ -15,6 +15,21 @@ int mkdir(const char *path, mode_t mode) {
 		return -1;
 	}
 
+	// Prepare a new data block for creating empty dir block
+	struct data_block *block = data_block_alloc();
+	if(block == NULL) {
+		fprintf(stderr, "could not find a free data block\n");
+		errno = ENOSPC;
+		return -1;
+	}
+
+	// Fetch parent inode
+	struct inode *parent_inode = get_inode(get_parent_inode_id(path));
+	if(parent_inode == NULL) {
+		fprintf(stderr, "failed to get parent inode id\n");
+		return -1;
+	}
+
 	// Prepare a new inode
 	struct inode *inode = ialloc();
 	if(inode == NULL) {
@@ -27,21 +42,6 @@ int mkdir(const char *path, mode_t mode) {
 	inode->last_modified_file = time(NULL);
 	inode->last_accessed_file = time(NULL);
 	inode->last_modified_inode = time(NULL);
-
-	// Prepare a new data block for creating empty dir block
-	struct data_block *block = data_block_alloc();
-	if(block == NULL) {
-		fprintf(stderr, "could not find a free data block\n");
-		errno = ENOSPC;
-		return -1;
-	}
-
-	// Fetch parent inode
-	struct inode *parent_inode = iget(get_parent_inode_id(path));
-	if(parent_inode == NULL) {
-		fprintf(stderr, "failed to get parent inode id\n");
-		return -1;
-	}
 
 	// Init the new dir block
 	big_int block_id = block->data_block_id;
@@ -65,10 +65,7 @@ int mkdir(const char *path, mode_t mode) {
 
 	// Write the new inode
 	inode->num_blocks++;
-	if(put_inode(inode) == -1) {
-		fprintf(stderr, "Failed to write inode to disk\n");
-		return -1;
-	}
+	put_inode(inode);
 
 	// Add new entry in parent inode
 	if(add_entry_to_parent(parent_inode, inode->inode_id, basename(strdup(path))) == -1) {
@@ -89,6 +86,13 @@ int mknod(const char *path, mode_t mode, dev_t dev) {
 		return -1;
 	}
 
+	// Fetch the parent inode
+	struct inode *parent_inode = get_inode(get_parent_inode_id(path));
+	if(parent_inode == NULL) {
+		fprintf(stderr, "failed to get parent inode\n");
+		return -1;
+	}
+
 	// Prepare a new inode
 	struct inode *inode = ialloc();
 	if(inode == NULL) {
@@ -103,14 +107,7 @@ int mknod(const char *path, mode_t mode, dev_t dev) {
 	inode->last_modified_inode = time(NULL);
 
 	// Persist the new inode
-	iput(inode);
-
-	// Fetch the parent inode
-	struct inode *parent_inode = get_inode(get_parent_inode_id(path));
-	if(parent_inode == NULL) {
-		fprintf(stderr, "failed to get parent inode\n");
-		return -1;
-	}
+	put_inode(inode);
 
 	// Add new entry in parent inode
 	if(add_entry_to_parent(parent_inode, inode->inode_id, name) == -1) {
@@ -118,7 +115,7 @@ int mknod(const char *path, mode_t mode, dev_t dev) {
 		return -1;
 	}
 	// Persist parent inode
-	iput(parent_inode);
+	put_inode(parent_inode);
 
 	return 0;
 }
@@ -127,7 +124,7 @@ int readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset
 	// TODO Use offset?
 	(void) offset;
 
-	struct inode *inode = iget(namei(path));
+	struct inode *inode = get_inode(namei(path));
 	if(inode == NULL) {
 		fprintf(stderr, "failed to get inode\n");
 		return -1;
@@ -163,7 +160,7 @@ int readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset
 
 int unlink(const char *path) {
 
-	struct inode *inode = iget(namei(path));
+	struct inode *inode = get_inode(namei(path));
 	if(inode == NULL) {
 		fprintf(stderr, "failed to get inode\n");
 		return -1;
@@ -181,7 +178,7 @@ int unlink(const char *path) {
 		return -1;
 	}
 
-	struct inode *parent_inode = iget(get_parent_inode_id(path));
+	struct inode *parent_inode = get_inode(get_parent_inode_id(path));
 	if(parent_inode == NULL) {
 		fprintf(stderr, "failed to get parent inode\n");
 		return -1;
