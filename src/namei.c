@@ -1,6 +1,7 @@
 #include "common.h"
 #include "disk_emulator.h"
 #include "inodes_handler.h"
+#include "block_utils.h"
 #include "namei.h"
 
 static int check_data_block_for_next_entry(struct dir_block *dir_block, char *next_file) { // returns -1 if entry not found
@@ -34,7 +35,7 @@ int namei(const char *path) {
 		big_int i;
 		big_int len = next_inode->num_blocks;
 		for(i = 0; i < len; ++i) {
-			block_id = get_and_set_block_id(next_inode, i, 0);
+			block_id = get_block_id(next_inode, i);
 			read_block(block_id, &dir_block);
 			next_inode_number = check_data_block_for_next_entry(&dir_block, next_file);
 			if(next_inode_number != -1) {
@@ -43,7 +44,7 @@ int namei(const char *path) {
 		}
 
 		if(next_inode_number == -1) {
-			fprintf(stderr, "Next file entry not found in current directory");
+			fprintf(stderr, "Next file entry not found in current directory\n");
 			return -1;
 		}
 
@@ -52,7 +53,7 @@ int namei(const char *path) {
 	}
 
 	if(next_inode == NULL){
-		fprintf(stderr, "iget returned null, exiting namei..");
+		fprintf(stderr, "iget returned null, exiting namei..\n");
 		return -1;
 	}
 

@@ -28,8 +28,8 @@ INCLUDES = -I./../src -Iinclude -Iinclude/fixture
 SRC_DIR = src
 BIN_DIR = bin
 
-TESTS = include/unity.c include/fixture/unity_fixture.c all_tests.c test_disk_emulator.c test_data_blocks_handler.c test_mkfs.c test_inodes_handler.c test_syscalls2.c test_syscalls1.c test_common.c test_namei.c
-SRC_FILES_USED_IN_TESTS = ../src/disk_emulator.c ../src/data_blocks_handler.c ../src/common.c ../src/mkfs.c ../src/inodes_handler.c ../src/inode_table.c ../src/syscalls2.c ../src/syscalls1.c ../src/namei.c
+TESTS = include/unity.c include/fixture/unity_fixture.c all_tests.c test_disk_emulator.c test_data_blocks_handler.c test_mkfs.c test_inodes_handler.c test_syscalls2.c test_syscalls1.c test_common.c test_namei.c test_block_utils.c
+SRC_FILES_USED_IN_TESTS = ../src/disk_emulator.c ../src/data_blocks_handler.c ../src/common.c ../src/mkfs.c ../src/inodes_handler.c ../src/inode_table.c ../src/syscalls2.c ../src/syscalls1.c ../src/namei.c ../src/block_utils.c
 
 all: clean tests
 

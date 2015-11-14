@@ -4,6 +4,7 @@
 #include "inode_table.h"
 #include "data_blocks_handler.h"
 #include "disk_emulator.h"
+#include "block_utils.h"
 #include "namei.h"
 
 int mkdir(const char *path, mode_t mode) {
@@ -57,7 +58,7 @@ int mkdir(const char *path, mode_t mode) {
 	}
 
 	// Update the new inode with new dir block mapping
-	if(get_and_set_block_id(inode, 0, block_id) != block_id) {
+	if(set_block_id(inode, 0, block_id) == -1) {
 		fprintf(stderr, "failed to set data block in inode\n");
 		return -1;
 	}
@@ -147,8 +148,8 @@ int readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset
 	unsigned int i;
 	int j;
 	for(i = 0; i < total_dir_blocks; ++i) {
-		big_int block_id = get_and_set_block_id(inode, i, 0);
-		if(read_block(block_id, &dir_block) == 0) {
+		big_int block_id = get_block_id(inode, i);
+		if(block_id > 0 && read_block(block_id, &dir_block) == 0) {
 			for(j = 0; j < len; ++j) {
 				if(dir_block.inode_ids[i] != 0) {
 					filler(buffer, dir_block.names[i], &stat, 0);
@@ -191,8 +192,8 @@ int unlink(const char *path) {
 	big_int total_dir_blocks = parent_inode->num_blocks;
 	unsigned int i;
 	for(i = 0; i < total_dir_blocks; ++i) {
-		big_int block_id = get_and_set_block_id(parent_inode, i, 0);
-		if(read_block(block_id, &dir_block) == 0) {
+		big_int block_id = get_block_id(parent_inode, i);
+		if(block_id > 0 && read_block(block_id, &dir_block) == 0) {
 			if(remove_entry_from_dir_block(&dir_block, inode->inode_id) == 0) {
 				write_block(block_id, &dir_block, sizeof(struct dir_block));
 				break;
