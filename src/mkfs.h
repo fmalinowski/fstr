@@ -13,6 +13,6 @@ int write_inode(struct inode *inode);
 
 int create_free_blocks(void);
 
-int create_root_inode(void);
+int create_root_dir(void);
 
 #endif

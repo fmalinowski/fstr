@@ -10,5 +10,6 @@ int mknod(const char *path, mode_t mode, dev_t dev);
 
 int readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset);
 int unlink(const char *path);
+int rmdir(const char *path);
 
 #endif
