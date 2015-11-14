@@ -119,9 +119,6 @@ int add_entry_to_dir_block(struct dir_block *dir_block, int inode_id, const char
 // Remove inode entry from dir_block
 int remove_entry_from_dir_block(struct dir_block *dir_block, int inode_id);
 
-// Get block_id which is at position 'index'. Set block_id too if value > 0
-big_int get_and_set_block_id(struct inode *inode, big_int index, big_int value);
-
 int get_parent_inode_id(const char *path);
 
 #endif

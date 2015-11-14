@@ -1,5 +1,6 @@
 #include "inodes_handler.h"
 #include "data_blocks_handler.h"
+#include "block_utils.h"
 // ASSUMING INODE NUMBERS START FROM 1
 
 struct inode* iget(big_int inode_number){
@@ -41,7 +42,7 @@ int iput(struct inode * inod) {
 		big_int total_blocks = inod->num_blocks;
 		big_int i;
 		for(i = 0; i < total_blocks; ++i) {
-			big_int block_id = get_and_set_block_id(inod, i, 0);
+			big_int block_id = get_block_id(inod, i);
 			if(block_id > 0) {
 				data_block.data_block_id = block_id;
 				data_block_free(&data_block);
