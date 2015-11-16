@@ -1,6 +1,8 @@
 #include "common.h"
 #include "disk_emulator.h"
 #include "mkfs.h"
+#include "syscalls1.h"
+#include "syscalls2.h"
 
 /*static const char *hello_str = "Hello World!\n";
 static const char *hello_path = "/hello";
@@ -24,11 +26,10 @@ static int fstr_getattr(const char *path, struct stat *stbuf)
 }*/
 
 static int fstr_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi){
-	int ret_val = 0;
-    
-    filler(buf, ".", NULL, 0);
-	filler(buf, "..", NULL, 0);
 	LOGD("you called readdir\n");
+    int ret_val = 0;
+    ret_val = readdir(path, buf, filler, offset);
+    
 	return ret_val;
 }
 
@@ -40,7 +41,7 @@ static int fstr_open(const char *path, struct fuse_file_info *fi){
     
     fd = open(path, fi->flags);
     if (fd < 0){
-    	LOGD("OPEN error, fd: %d, fd");
+    	LOGD("OPEN error, fd: %d", fd);
     }
     fi->fh = fd;
     
