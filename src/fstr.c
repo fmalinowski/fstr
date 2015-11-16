@@ -5,7 +5,7 @@
 static const char *hello_str = "Hello World!\n";
 static const char *hello_path = "/hello";
 
-static int fstr_getattr(const char *path, struct stat *stbuf)
+/*static int fstr_getattr(const char *path, struct stat *stbuf)
 {
 	int res = 0;
 
@@ -21,7 +21,7 @@ static int fstr_getattr(const char *path, struct stat *stbuf)
         res = -ENOENT;
 
     return res;
-}
+}*/
 
 static int fstr_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi){
 	int ret_val = 0;
@@ -58,6 +58,19 @@ static int fstr_mkdir(const char *path, mode_t mode){
     }
     return ret_val;
 }
+
+static int fstr_rmdir(const char *path){
+    int ret_val = 0;
+    
+    printf("\nfstr_rmdir(path=\"%s\", ..)\n", path);
+    
+    ret_val = rmdir(path);
+    if (ret_val < 0){
+        LOGD("RMDIR error: %d", ret_val);
+    }
+    return ret_val;
+}
+
 
 static int fstr_mknod(const char *path, mode_t mode, dev_t dev){ // dev_t is device type; I suppose we wouldn't need it
 	int ret_val = 0;
@@ -122,7 +135,7 @@ static int fstr_write(const char *path, const char *buf, size_t size, off_t offs
 
 
 static struct fuse_operations fstr_fuse_oper = {
-	.getattr	= fstr_getattr,
+	//.getattr	= fstr_getattr,
 	.mkdir		= fstr_mkdir,
     .rmdir      = fstr_rmdir,
 	.mknod 		= fstr_mknod,
