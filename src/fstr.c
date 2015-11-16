@@ -40,7 +40,6 @@ static int fstr_open(const char *path, struct fuse_file_info *fi){
     
     fd = open(path, fi->flags);
     if (fd < 0){
-    	printf("file open error");
     	LOGD("OPEN error, fd: %d, fd");
     }
     fi->fh = fd;
@@ -55,7 +54,6 @@ static int fstr_mkdir(const char *path, mode_t mode){
     
     ret_val = mkdir(path, mode);
     if (ret_val < 0){
-    	printf("mkdir error");
     	LOGD("MKDIR error: %d", ret_val);
     }
     return ret_val;
@@ -69,7 +67,7 @@ static int fstr_mknod(const char *path, mode_t mode, dev_t dev){ // dev_t is dev
     ret_val = mknod(path, mode, dev);
 
     if(ret_val < 0){
-    	printf("mknod error");
+    	
     	LOGD("MKNOD error: %d", ret_val);	
     }
     return ret_val;
@@ -126,6 +124,7 @@ static int fstr_write(const char *path, const char *buf, size_t size, off_t offs
 static struct fuse_operations fstr_fuse_oper = {
 	.getattr	= fstr_getattr,
 	.mkdir		= fstr_mkdir,
+    .rmdir      = fstr_rmdir,
 	.mknod 		= fstr_mknod,
 	.unlink		= fstr_unlink,
 	.readdir	= fstr_readdir,
