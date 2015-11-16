@@ -12,6 +12,7 @@ TEST_GROUP_RUNNER(TestInodesHandler) {
 	RUN_TEST_CASE(TestInodesHandler, test_ialloc_works_correctly);
 	RUN_TEST_CASE(TestInodesHandler, test_ifree_works_correctly);
 	RUN_TEST_CASE(TestInodesHandler, test_iput_works_correctly);
+	RUN_TEST_CASE(TestInodesHandler, test_2_allocs_and_2_saves);
 }
 
 TEST_GROUP(TestInodesHandler);
@@ -42,6 +43,7 @@ TEST(TestInodesHandler, test_iget_works_correctly){
 
 
 TEST(TestInodesHandler, test_ialloc_works_correctly){
+	int x;
 	struct inode * inod = ialloc();
 	struct inode * inod2 = ialloc();
 	TEST_ASSERT_TRUE(inod != NULL);
@@ -53,6 +55,12 @@ TEST(TestInodesHandler, test_ialloc_works_correctly){
 	TEST_ASSERT_TRUE(inod->inode_id <= NUM_INODES);
 	TEST_ASSERT_TRUE(inod2->inode_id <= NUM_INODES);
 	TEST_ASSERT_TRUE(inod->inode_id != inod2->inode_id);
+	inod->links_nb = 2;		
+	x = inod->inode_id;		
+	// printf("x is %d", inod->inode_id);		
+	TEST_ASSERT_TRUE(0 == iput(inod));		
+	struct inode *inod3 = iget(x);		
+	TEST_ASSERT_TRUE(2 == inod3->links_nb);
 }
 
 
@@ -60,6 +68,9 @@ TEST(TestInodesHandler, test_ifree_works_correctly){
 	struct inode * inod = ialloc();
 	TEST_ASSERT_TRUE(inod != NULL);
 	TEST_ASSERT_EQUAL(0, ifree(inod));
+	struct inode * inod2 = ialloc();
+	inod2->links_nb = 0;
+	TEST_ASSERT_EQUAL(0, iput(inod2));
 }
 
 TEST(TestInodesHandler, test_iput_works_correctly){ // Wait for Francois's reply. 
@@ -102,5 +113,38 @@ TEST(TestInodesHandler, test_iput_works_correctly){ // Wait for Francois's reply
 	TEST_ASSERT_EQUAL(x, inod2->inode_id);	
 }
 
+TEST(TestInodesHandler, test_2_allocs_and_2_saves){
+	struct inode *inod1, *inod2;
+	
+	inod1 = ialloc();
+	TEST_ASSERT_EQUAL(2, inod1->inode_id);
 
+	inod1->last_modified_file = 56;
+	inod1->links_nb = 14;
+	iput(inod1);
 
+	free_inode(inod1);
+
+	inod1 = iget(2);
+	TEST_ASSERT_EQUAL(2, inod1->inode_id);
+	TEST_ASSERT_EQUAL(14, inod1->links_nb);
+	TEST_ASSERT_EQUAL(56, inod1->last_modified_file);
+
+	free_inode(inod1);
+
+	inod2 = ialloc();
+	TEST_ASSERT_EQUAL(3, inod2->inode_id);
+
+	inod2->last_modified_file = 57;
+	inod2->links_nb = 15;
+	iput(inod2);
+
+	free_inode(inod2);
+
+	inod2 = iget(3);
+	TEST_ASSERT_EQUAL(3, inod2->inode_id);
+	TEST_ASSERT_EQUAL(15, inod2->links_nb);
+	TEST_ASSERT_EQUAL(57, inod2->last_modified_file);
+
+	free_inode(inod2);
+}

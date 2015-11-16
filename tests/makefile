@@ -22,6 +22,9 @@ CFLAGS += -Wmissing-prototypes
 CFLAGS += -Wmissing-declarations
 CFLAGS += -DUNITY_FIXTURES
 
+# flags to be used to stub the PID in syscall2 during tests (USED ONLY IN TESTS otherwise production code won't work!!!)
+C_FSTR_TESTFLAGS = -DSYSCALL2__TEST
+
 
 INCLUDES = -I./../src -Iinclude -Iinclude/fixture
 
@@ -35,7 +38,7 @@ all: clean tests
 
 tests:
 	mkdir -p $(BIN_DIR)
-	$(CC) $(CFLAGS) $(INCLUDES) $(SRC_FILES_USED_IN_TESTS) $(TESTS) -o $(BIN_DIR)/tests
+	$(CC) $(CFLAGS) $(C_FSTR_TESTFLAGS) $(INCLUDES) $(SRC_FILES_USED_IN_TESTS) $(TESTS) -o $(BIN_DIR)/tests
 	$(BIN_DIR)/tests -v
 
 clean:

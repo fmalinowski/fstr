@@ -208,3 +208,7 @@ int data_block_free(struct data_block * datablock) {
 
 	return 0;
 }
+
+void free_data_block_pointer(struct data_block * db) {
+	free(db);
+}
