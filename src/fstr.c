@@ -2,10 +2,10 @@
 #include "disk_emulator.h"
 #include "mkfs.h"
 
-static const char *hello_str = "Hello World!\n";
+/*static const char *hello_str = "Hello World!\n";
 static const char *hello_path = "/hello";
 
-/*static int fstr_getattr(const char *path, struct stat *stbuf)
+static int fstr_getattr(const char *path, struct stat *stbuf)
 {
 	int res = 0;
 
@@ -28,7 +28,7 @@ static int fstr_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off
     
     filler(buf, ".", NULL, 0);
 	filler(buf, "..", NULL, 0);
-	LODG("you called readdir\n");
+	LOGD("you called readdir\n");
 	return ret_val;
 }
 
