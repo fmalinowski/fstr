@@ -341,6 +341,11 @@ big_int get_ith_datablock_number(struct inode * inod, big_int ith_block) {
 	else if (ith_block <= num_blocks_before_double_indirects) {
 		// single indirect block
 		pos_in_single_indirect = ith_block - num_blocks_before_single_indirects - 1;
+
+		// If single indirect block was not allocated because we never needed it (case where we previously wrote at a further offset not in this indirect block)
+		if (inod->single_indirect_block == 0) {
+			return 0;
+		}
 		
 		single_indirect_block = bread(inod->single_indirect_block);
 		memcpy(&block_nb, &single_indirect_block->block[pos_in_single_indirect * sizeof(big_int)], sizeof(big_int));
@@ -353,9 +358,19 @@ big_int get_ith_datablock_number(struct inode * inod, big_int ith_block) {
 		pos_in_single_indirect = (ith_block - num_blocks_before_double_indirects - 1) / BLOCK_ID_LIST_LENGTH; // starts from 0 to (BLOCK_ID_LIST_LENGTH - 1) included
 		pos_in_double_indirect = (ith_block - num_blocks_before_double_indirects - 1) % BLOCK_ID_LIST_LENGTH; // starts from 0 to (BLOCK_ID_LIST_LENGTH - 1) included
 
+		// If double indirect block level 1 was not allocated because we never needed it (case where we previously wrote at a further offset not in this indirect block)
+		if (inod->double_indirect_block == 0) {
+			return 0;
+		}
+
 		double_indirect_block_level_1 = bread(inod->double_indirect_block);
 		memcpy(&block_nb_in_level1, &double_indirect_block_level_1->block[pos_in_single_indirect * sizeof(big_int)], sizeof(big_int));
 		free(double_indirect_block_level_1);
+
+		// If double indirect block level 2 was not allocated because we never needed it (case where we previously wrote at a further offset not in this indirect block)
+		if (block_nb_in_level1 == 0) {
+			return 0;
+		}
 
 		double_indirect_block_level_2 = bread(block_nb_in_level1);
 		memcpy(&block_nb_in_level2, &double_indirect_block_level_2->block[pos_in_double_indirect * sizeof(big_int)], sizeof(big_int));
@@ -369,13 +384,28 @@ big_int get_ith_datablock_number(struct inode * inod, big_int ith_block) {
 		pos_in_double_indirect = ((ith_block - num_blocks_before_triple_indirects - 1) % (BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH)) / BLOCK_ID_LIST_LENGTH;
 		pos_in_triple_indirect = (ith_block - num_blocks_before_triple_indirects - 1) % BLOCK_ID_LIST_LENGTH;
 
+		// If triple indirect block level 1 was not allocated because we never needed it (case where we previously wrote at a further offset not in this indirect block)
+		if (inod->triple_indirect_block == 0) {
+			return 0;
+		}
+
 		triple_indirect_block_level_1 = bread(inod->triple_indirect_block);
 		memcpy(&block_nb_in_level1, &triple_indirect_block_level_1->block[pos_in_single_indirect * sizeof(big_int)], sizeof(big_int));
 		free(triple_indirect_block_level_1);
 
+		// If triple indirect block level 2 was not allocated because we never needed it (case where we previously wrote at a further offset not in this indirect block)
+		if (block_nb_in_level1 == 0) {
+			return 0;
+		}
+
 		triple_indirect_block_level_2 = bread(block_nb_in_level1);
 		memcpy(&block_nb_in_level2, &triple_indirect_block_level_2->block[pos_in_double_indirect * sizeof(big_int)], sizeof(big_int));
 		free(triple_indirect_block_level_2);
+
+		// If triple indirect block level 3 was not allocated because we never needed it (case where we previously wrote at a further offset not in this indirect block)
+		if (block_nb_in_level2 == 0) {
+			return 0;
+		}
 
 		triple_indirect_block_level_3 = bread(block_nb_in_level2);
 		memcpy(&block_nb_in_level3, &triple_indirect_block_level_3->block[pos_in_triple_indirect * sizeof(big_int)], sizeof(big_int));
@@ -385,68 +415,145 @@ big_int get_ith_datablock_number(struct inode * inod, big_int ith_block) {
 	}
 }
 
-// // We count datablock from 1 to num_blocks
-// int set_ith_datablock_number(struct inode * inod, big_int ith_block, big_int block_number) {
-// 	big_int block_nb, block_nb_in_level1, block_nb_in_level2, block_nb_in_level3;
-// 	int pos_in_single_indirect, pos_in_double_indirect, pos_in_triple_indirect;
-// 	big_int num_blocks_before_single_indirects, num_blocks_before_double_indirects, num_blocks_before_triple_indirects, num_blocks_before_quadruple_indirects;
-// 	struct data_block *single_indirect_block;
-// 	struct data_block *double_indirect_block_level_1, *double_indirect_block_level_2;
-// 	struct data_block *triple_indirect_block_level_1, *triple_indirect_block_level_2, *triple_indirect_block_level_3;
+// We count datablock from 1 to num_blocks
+// We set the block number of the ith block at the right position in list of direct/indirect block numbers and we update the num_blocks and 
+// num_used_bytes_in_last_block = 0
+// If the indirect blocks do no exist (block number = 0), we allocate them on the fly
+// We save the inode and the new block number on disk
+int set_ith_datablock_number(struct inode * inod, big_int ith_block, big_int block_number) {
+	big_int block_nb_in_level1, block_nb_in_level2;
+	int pos_in_single_indirect, pos_in_double_indirect, pos_in_triple_indirect;
+	big_int num_blocks_before_single_indirects, num_blocks_before_double_indirects, num_blocks_before_triple_indirects, num_blocks_before_quadruple_indirects;
+	struct data_block *single_indirect_block;
+	struct data_block *double_indirect_block_level_1, *double_indirect_block_level_2;
+	struct data_block *triple_indirect_block_level_1, *triple_indirect_block_level_2, *triple_indirect_block_level_3;
 
-// 	num_blocks_before_single_indirects = NUM_DIRECT_BLOCKS;
-// 	num_blocks_before_double_indirects = num_blocks_before_single_indirects + BLOCK_ID_LIST_LENGTH;
-// 	num_blocks_before_triple_indirects = num_blocks_before_double_indirects + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH;
-// 	num_blocks_before_quadruple_indirects = num_blocks_before_triple_indirects + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH;
+	num_blocks_before_single_indirects = NUM_DIRECT_BLOCKS;
+	num_blocks_before_double_indirects = num_blocks_before_single_indirects + BLOCK_ID_LIST_LENGTH;
+	num_blocks_before_triple_indirects = num_blocks_before_double_indirects + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH;
+	num_blocks_before_quadruple_indirects = num_blocks_before_triple_indirects + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH;
 
-// 	if (ith_block < 1 || ith_block > num_blocks_before_quadruple_indirects) {
-// 		return -1;
-// 	}
-// 	else if (ith_block <= num_blocks_before_single_indirects) {
-// 		// direct indirect block
-// 		inod->direct_blocks[ith_block - 1] = block_number;
-// 	}
-// 	else if (ith_block <= num_blocks_before_double_indirects) {
-// 		// single indirect block
-// 		pos_in_single_indirect = ith_block - num_blocks_before_single_indirects - 1;
+	if (ith_block < 1 || ith_block > num_blocks_before_quadruple_indirects) {
+		return -1;
+	}
+	else if (ith_block <= num_blocks_before_single_indirects) {
+		// direct indirect block
+		inod->direct_blocks[ith_block - 1] = block_number;
+	}
+	else if (ith_block <= num_blocks_before_double_indirects) {
+		// single indirect block
+		pos_in_single_indirect = ith_block - num_blocks_before_single_indirects - 1;
+
+		single_indirect_block = NULL;
+
+		// if single indirect block doesn't exist, we create it
+		if (inod->single_indirect_block == 0) {
+			single_indirect_block = data_block_alloc();
+			inod->single_indirect_block = single_indirect_block->data_block_id;
+		}		
 		
-// 		single_indirect_block = bread(inod->single_indirect_block);
-// 		memcpy(&single_indirect_block->block[pos_in_single_indirect * sizeof(big_int)], &block_number, sizeof(big_int));
-// 		if (bwrite(single_indirect_block) == -1) {
-// 			return -1
-// 		}
-// 	}
-// 	else if (ith_block <= num_blocks_before_triple_indirects) {
-// 		// double indirect block
-// 		pos_in_single_indirect = (ith_block - num_blocks_before_double_indirects - 1) / BLOCK_ID_LIST_LENGTH; // starts from 0 to (BLOCK_ID_LIST_LENGTH - 1) included
-// 		pos_in_double_indirect = (ith_block - num_blocks_before_double_indirects - 1) % BLOCK_ID_LIST_LENGTH; // starts from 0 to (BLOCK_ID_LIST_LENGTH - 1) included
+		single_indirect_block = single_indirect_block == NULL ? bread(inod->single_indirect_block) : single_indirect_block;
+		memcpy(&single_indirect_block->block[pos_in_single_indirect * sizeof(big_int)], &block_number, sizeof(big_int));
+		
+		if (bwrite(single_indirect_block) == -1) {
+			free(single_indirect_block);
+			return -1;
+		}
+		free(single_indirect_block);
+	}
+	else if (ith_block <= num_blocks_before_triple_indirects) {
+		// double indirect block
+		pos_in_single_indirect = (ith_block - num_blocks_before_double_indirects - 1) / BLOCK_ID_LIST_LENGTH; // starts from 0 to (BLOCK_ID_LIST_LENGTH - 1) included
+		pos_in_double_indirect = (ith_block - num_blocks_before_double_indirects - 1) % BLOCK_ID_LIST_LENGTH; // starts from 0 to (BLOCK_ID_LIST_LENGTH - 1) included
 
-// 		double_indirect_block_level_1 = bread(inod->double_indirect_block);
-// 		memcpy(&block_nb_in_level1, &double_indirect_block_level_1->block[pos_in_single_indirect * sizeof(big_int)], sizeof(big_int));
+		double_indirect_block_level_1 = NULL;
+		double_indirect_block_level_2 = NULL;
 
-// 		double_indirect_block_level_2 = bread(block_nb_in_level1);
-// 		memcpy(&block_nb_in_level2, &double_indirect_block_level_2->block[pos_in_double_indirect * sizeof(big_int)], sizeof(big_int));
+		// if double indirect block level 1 doesn't exist, we create it
+		if (inod->double_indirect_block == 0) {
+			double_indirect_block_level_1 = data_block_alloc();
+			inod->double_indirect_block = double_indirect_block_level_1->data_block_id;
+		}
 
-// 		return block_nb_in_level2;
-// 	}
-// 	else {
-// 		// triple indirect block
-// 		pos_in_single_indirect = (ith_block - num_blocks_before_triple_indirects - 1) / (BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH);
-// 		pos_in_double_indirect = ((ith_block - num_blocks_before_triple_indirects - 1) % (BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH)) / BLOCK_ID_LIST_LENGTH;
-// 		pos_in_triple_indirect = (ith_block - num_blocks_before_triple_indirects - 1) % BLOCK_ID_LIST_LENGTH;
+		double_indirect_block_level_1 = double_indirect_block_level_1 == NULL ? bread(inod->double_indirect_block) : double_indirect_block_level_1;
+		memcpy(&block_nb_in_level1, &double_indirect_block_level_1->block[pos_in_single_indirect * sizeof(big_int)], sizeof(big_int));
 
-// 		triple_indirect_block_level_1 = bread(inod->triple_indirect_block);
-// 		memcpy(&block_nb_in_level1, &triple_indirect_block_level_1->block[pos_in_single_indirect * sizeof(big_int)], sizeof(big_int));
+		// if double indirect block level 2 doesn't exist, we create it
+		if (block_nb_in_level1 == 0) {
+			double_indirect_block_level_2 = data_block_alloc();
+			memcpy(&double_indirect_block_level_1->block[pos_in_single_indirect * sizeof(big_int)], &double_indirect_block_level_2->data_block_id, sizeof(big_int));
+			bwrite(double_indirect_block_level_1);
+		}
 
-// 		triple_indirect_block_level_2 = bread(block_nb_in_level1);
-// 		memcpy(&block_nb_in_level2, &triple_indirect_block_level_2->block[pos_in_double_indirect * sizeof(big_int)], sizeof(big_int));
+		free(double_indirect_block_level_1);
 
-// 		triple_indirect_block_level_3 = bread(block_nb_in_level2);
-// 		memcpy(&block_nb_in_level3, &triple_indirect_block_level_3->block[pos_in_triple_indirect * sizeof(big_int)], sizeof(big_int));
+		double_indirect_block_level_2 = double_indirect_block_level_2 == NULL ? bread(block_nb_in_level1) : double_indirect_block_level_2;
+		memcpy(&double_indirect_block_level_2->block[pos_in_double_indirect * sizeof(big_int)], &block_number, sizeof(big_int));
 
-// 		return block_nb_in_level3;
-// 	}
-// }
+		if (bwrite(double_indirect_block_level_2) == -1) {
+			free(double_indirect_block_level_2);
+			return -1;
+		}
+		free(double_indirect_block_level_2);
+	}
+	else {
+		// triple indirect block
+		pos_in_single_indirect = (ith_block - num_blocks_before_triple_indirects - 1) / (BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH);
+		pos_in_double_indirect = ((ith_block - num_blocks_before_triple_indirects - 1) % (BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH)) / BLOCK_ID_LIST_LENGTH;
+		pos_in_triple_indirect = (ith_block - num_blocks_before_triple_indirects - 1) % BLOCK_ID_LIST_LENGTH;
+
+		triple_indirect_block_level_1 = NULL;
+		triple_indirect_block_level_2 = NULL;
+		triple_indirect_block_level_3 = NULL;
+
+		// if triple indirect block level 1 doesn't exist, we create it
+		if (inod->triple_indirect_block == 0) {
+			triple_indirect_block_level_1 = data_block_alloc();
+			inod->triple_indirect_block = triple_indirect_block_level_1->data_block_id;
+		}
+
+		triple_indirect_block_level_1 = triple_indirect_block_level_1 == NULL ? bread(inod->triple_indirect_block) : triple_indirect_block_level_1;
+		memcpy(&block_nb_in_level1, &triple_indirect_block_level_1->block[pos_in_single_indirect * sizeof(big_int)], sizeof(big_int));
+
+		// if triple indirect block level 2 doesn't exist, we create it
+		if (block_nb_in_level1 == 0) {
+			triple_indirect_block_level_2 = data_block_alloc();
+			memcpy(&triple_indirect_block_level_1->block[pos_in_single_indirect * sizeof(big_int)], &triple_indirect_block_level_2->data_block_id, sizeof(big_int));
+			bwrite(triple_indirect_block_level_1);
+		}
+
+		free(triple_indirect_block_level_1);
+
+		triple_indirect_block_level_2 = triple_indirect_block_level_2 == NULL ? bread(block_nb_in_level1) : triple_indirect_block_level_2;
+		memcpy(&block_nb_in_level2, &triple_indirect_block_level_2->block[pos_in_double_indirect * sizeof(big_int)], sizeof(big_int));
+
+		// if triple indirect block level 3 doesn't exist, we create it
+		if (block_nb_in_level2 == 0) {
+			triple_indirect_block_level_3 = data_block_alloc();
+			memcpy(&triple_indirect_block_level_2->block[pos_in_double_indirect * sizeof(big_int)], &triple_indirect_block_level_3->data_block_id, sizeof(big_int));
+			bwrite(triple_indirect_block_level_2);
+		}
+
+		free(triple_indirect_block_level_2);
+
+		triple_indirect_block_level_3 = triple_indirect_block_level_3 == NULL ? bread(block_nb_in_level2) : triple_indirect_block_level_3;
+		memcpy(&triple_indirect_block_level_3->block[pos_in_triple_indirect * sizeof(big_int)], &block_number, sizeof(big_int));
+
+		if (bwrite(triple_indirect_block_level_3) == -1) {
+			free(triple_indirect_block_level_3);
+			return -1;
+		}
+		free(triple_indirect_block_level_3);
+	}
+
+	// If we allocated a datablock that is beyond the end of the file, then we need to update the inode
+	if (inod->num_blocks < ith_block) {
+		inod->num_blocks = ith_block;
+		inod->num_used_bytes_in_last_block = 0;
+	}
+	put_inode(inod);
+	return 0;
+}
 
 // We count datablock from 1 to num_blocks
 big_int convert_byte_offset_to_ith_datablock(off_t offset) {
@@ -481,7 +588,8 @@ ssize_t pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 
 	block_num_pos = convert_byte_offset_to_ith_datablock(offset);
 	current_block_number = get_ith_datablock_number(inod, block_num_pos);
-	db = bread(current_block_number);
+	// db = bread(current_block_number);
+	db = NULL;
 
 	read_bytes = 0;
 	remaining_bytes = nbyte;
@@ -508,10 +616,20 @@ ssize_t pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 			}
 			bytes_to_be_copied = min(bytes_to_be_copied, inod->num_used_bytes_in_last_block - current_offset_in_block);
 		}
+
 		// printf("We're here F, read_bytes: %zu, current_offset_in_block: %lld, bytes_to_be_copied: %zu, first_character: %c, block_number: %llu\n", read_bytes, current_offset_in_block, bytes_to_be_copied, db->block[current_offset_in_block], db->data_block_id);
-		memcpy(&((char *)buf)[read_bytes], &db->block[current_offset_in_block], bytes_to_be_copied);
+		if (current_block_number == 0) {
+			// Non allocated datablock so we fill with 0s only
+			memset(&((char *)buf)[read_bytes], 0, bytes_to_be_copied);
+		}
+		else {
+			db = bread(current_block_number);
+			memcpy(&((char *)buf)[read_bytes], &db->block[current_offset_in_block], bytes_to_be_copied);
+		}
+
 		read_bytes += bytes_to_be_copied;
-		current_offset_in_block = (current_offset_in_block + read_bytes) % BLOCK_SIZE;
+		// current_offset_in_block = (current_offset_in_block + read_bytes) % BLOCK_SIZE;
+		current_offset_in_block = (current_offset_in_block + bytes_to_be_copied) % BLOCK_SIZE;
 
 		remaining_bytes -= bytes_to_be_copied;
 
@@ -520,13 +638,98 @@ ssize_t pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 			// We need to read the next datablock cause we have reached the end of a block in this read step
 			block_num_pos++;
 			current_block_number = get_ith_datablock_number(inod, block_num_pos);
-			free(db);
-			db = bread(current_block_number);
+
+			if (db != NULL) {
+				free(db);
+				db = NULL;
+			}
 		}
 	}
 
-	free(db);
+	if (db != NULL) {
+		free(db);
+	}
 	free(inod);
 	fde->byte_offset = offset + read_bytes;
 	return read_bytes;
+}
+
+ssize_t pwrite(int fildes, const void *buf, size_t nbyte, off_t offset) {
+	struct file_descriptor_entry * fde;
+	struct inode * inod;
+	struct data_block * db;
+	int pid;
+	size_t remaining_bytes, bytes_to_be_copied, written_bytes;
+	off_t current_offset_in_block;
+	big_int block_num_pos, current_block_number;
+
+	pid = syscall2__get_pid();
+	fde = get_file_descriptor_entry(pid, fildes);
+
+	if (fde == NULL) {
+		return -1; // file descriptor doesn't exist
+	}
+
+	if ((fde->mode != WRITE) && (fde->mode != READ_WRITE)) {
+		return -1;
+	}
+
+	inod = get_inode(fde->inode_number);
+	block_num_pos = convert_byte_offset_to_ith_datablock(offset);
+
+	if (offset >= get_size_of_file(inod->num_blocks, inod->num_used_bytes_in_last_block) && !is_ith_block_in_range_of_direct_and_indirect_blocks(block_num_pos)) {
+		// request to write at position bigger than size of file
+		// AND We cannot allocate and write in a block that is not in the range of direct/indirect blocks
+		return -1;
+	}
+
+	current_block_number = get_ith_datablock_number(inod, block_num_pos);
+
+	remaining_bytes = nbyte;
+	current_offset_in_block = offset % BLOCK_SIZE;
+	written_bytes = 0;
+
+	while (remaining_bytes > 0) {
+		bytes_to_be_copied = min(BLOCK_SIZE - current_offset_in_block, remaining_bytes);
+
+		if (current_block_number == 0) {
+			// if datablock is not allocated
+			db = data_block_alloc();
+			set_ith_datablock_number(inod, block_num_pos, db->data_block_id);
+		}
+		else {
+			db = bread(current_block_number);
+		}
+
+		memcpy(&db->block[current_offset_in_block], &((char *)buf)[written_bytes], bytes_to_be_copied);
+		bwrite(db);
+		written_bytes += bytes_to_be_copied;
+
+		current_offset_in_block = (current_offset_in_block + bytes_to_be_copied) % BLOCK_SIZE;
+
+		remaining_bytes -= bytes_to_be_copied;
+
+		if (current_offset_in_block == 0) {
+			// current_offset_in_block = 0;
+			block_num_pos++;
+			current_block_number = get_ith_datablock_number(inod, block_num_pos);
+		}
+		free(db);
+	}
+
+	// Update the inode for the number of blocks used and position of last byte in file
+	if (current_offset_in_block == 0) {
+		inod->num_blocks = block_num_pos - 1;
+		inod->num_used_bytes_in_last_block = BLOCK_SIZE;
+	}
+	else {
+		inod->num_blocks = block_num_pos;
+		inod->num_used_bytes_in_last_block = current_offset_in_block;	
+	}
+
+	put_inode(inod);
+
+	free(inod);
+	fde->byte_offset = offset + written_bytes;
+	return written_bytes;
 }

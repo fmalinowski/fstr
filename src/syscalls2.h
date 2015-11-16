@@ -62,6 +62,7 @@ int get_size_of_file(big_int num_used_blocks, int last_byte_offset);
 
 int is_ith_block_in_range_of_direct_and_indirect_blocks(big_int ith_block); // Return 1 if true, 0 otherwise
 big_int get_ith_datablock_number(struct inode * inod, big_int ith_block); // ith block starts from 1 (1st datablock is in direct block)
+int set_ith_datablock_number(struct inode * inod, big_int ith_block, big_int block_number); // ith block starts from 1 (1st datablock is in direct block)
 big_int convert_byte_offset_to_ith_datablock(off_t offset); // returns the ith datablock that contains the offset (i starts from 1 and is a direct block)
 
 #endif
