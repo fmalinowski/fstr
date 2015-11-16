@@ -4,7 +4,7 @@ TEST_DIRS=tests
 MAKE_DIRS = $(SRC_DIRS) $(TEST_DIRS)
 
 
-all: multimake 
+all: clean multimake 
 
 multimake:
 	@for d in $(MAKE_DIRS);  \

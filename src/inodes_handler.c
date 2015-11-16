@@ -53,7 +53,7 @@ int iput(struct inode * inod) {
 	}
 
 	// Else, write the inode block to disk to save changes
-	struct data_block *blok = bread(ILIST_BEGIN + (inod->inode_id/(BLOCK_SIZE/INODE_SIZE)));
+	struct data_block *blok = bread(ILIST_BEGIN + ((inod->inode_id - 1)/(BLOCK_SIZE/INODE_SIZE)));
 	if(blok == NULL){
 		fprintf(stderr, "failed to read block\n");
 		return -1;
@@ -146,4 +146,8 @@ int ifree(struct inode * inod){
 	}
 	LOGD("IFREE: bwrite was unsuccessful");
 	return -1;
+}
+
+void free_inode(struct inode * inod) {		
+	free(inod);		
 }

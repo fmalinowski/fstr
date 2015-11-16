@@ -5,7 +5,7 @@ CC = gcc -Wall
 CFLAGS = `pkg-config fuse --cflags --libs`
 
 # define sources
-SRCS = fstr.c disk_emulator.c common.c data_blocks_handler.c mkfs.c inodes_handler.c inode_table.c syscalls2.c namei.c syscalls1.c
+SRCS = fstr.c disk_emulator.c common.c data_blocks_handler.c mkfs.c inodes_handler.c inode_table.c syscalls2.c namei.c syscalls1.c block_utils.c
 
 BIN_DIR = ../bin
 OBJS = $(SRCS:.c=.o)

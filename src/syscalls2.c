@@ -11,13 +11,13 @@
 		return -1;
 	}
 
-	int mknod(const char *path, mode_t mode, dev_t dev) {
-		syscall2__mknod = mode; // We set the value of mode to make sure the call to mknod was done correctly
-		if ((path && mode) || (path && mode && dev)) { // This is just to avoid the warning when compiling
-			return 0;
-		}
-		return -1;
-	}
+	// int mknod(const char *path, mode_t mode, dev_t dev) {
+	// 	syscall2__mknod = mode; // We set the value of mode to make sure the call to mknod was done correctly
+	// 	if ((path && mode) || (path && mode && dev)) { // This is just to avoid the warning when compiling
+	// 		return 0;
+	// 	}
+	// 	return -1;
+	// }
 #else
 	#include "namei.h"
 	#include "syscalls1.h"
@@ -268,39 +268,6 @@ int close(int fildes) {
 	}
 	return 0;
 }
-
-// // -1 is error
-// // 0 is direct block
-// // 1 is single indirect block
-// // 2 is double indirect block
-// // 3 is triple indirect block
-// int find_kind_of_block_contain_ith_block(big_int ith_block) {
-// 	int num_block_numbers_per_block;
-// 	int num_blocks_before_single_indirects, num_blocks_before_double_indirects, num_blocks_before_triple_indirects, num_blocks_before_quadruple_indirects;
-
-// 	num_block_numbers_per_block = BLOCK_ID_LIST_LENGTH;
-// 	num_blocks_before_single_indirects = NUM_DIRECT_BLOCKS;
-// 	num_blocks_before_double_indirects = num_blocks_before_single_indirects + BLOCK_ID_LIST_LENGTH;
-// 	num_blocks_before_triple_indirects = num_blocks_before_double_indirects + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH;
-// 	num_blocks_before_quadruple_indirects = num_blocks_before_triple_indirects + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH;
-
-// 	if (ith_block < 1 || ith_block >= num_blocks_before_quadruple_indirects) {
-// 		return -1;
-// 	}
-// 	else if (ith_block <= num_blocks_before_single_indirects) {
-// 		return 0;
-// 	}
-// 	else if (ith_block <= num_blocks_before_double_indirects) {
-// 		return 1;
-// 	}
-// 	else if (ith_block <= num_blocks_before_triple_indirects) {
-// 		return 2;
-// 	}
-// 	else {
-// 		return 3;
-// 	}
-// }
-
 
 // ith block starts from 1 (not from 0 !!)
 int is_ith_block_in_range_of_direct_and_indirect_blocks(big_int ith_block) {
