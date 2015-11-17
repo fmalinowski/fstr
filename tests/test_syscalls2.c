@@ -34,6 +34,8 @@ TEST_GROUP_RUNNER(TestSyscalls2) {
 	RUN_TEST_CASE(TestSyscalls2, read__less_bytes_to_read_than_a_block);
 	RUN_TEST_CASE(TestSyscalls2, read__more_bytes_to_read_than_a_block);
 	RUN_TEST_CASE(TestSyscalls2, read__more_bytes_to_read_than_available_in_file);
+	RUN_TEST_CASE(TestSyscalls2, pwrite__write_after_end_of_file);
+	RUN_TEST_CASE(TestSyscalls2, pwrite__write_in_a_block_that_was_already_written);
 }
 
 
@@ -999,12 +1001,12 @@ TEST(TestSyscalls2, read__more_bytes_to_read_than_available_in_file) {
 
 	block1 = data_block_alloc();
 
-	memset(block1->block, 'a', 15); // Write a full block of a
+	memset(block1->block, 'a', 15);
 	bwrite(block1);
 
 	inod->direct_blocks[4] = block1->data_block_id;
-	inod->num_blocks = 5; // 10 blocks are used in this file
-	inod->num_used_bytes_in_last_block = 15; // end of file is at byte offset 100 included in 6th block
+	inod->num_blocks = 5; // 5 blocks are used in this file
+	inod->num_used_bytes_in_last_block = 15; // end of file is at byte offset 15 included in 6th block
 	put_inode(inod);
 
 	fd = syscalls2__open("filepath", O_RDONLY);
@@ -1022,6 +1024,132 @@ TEST(TestSyscalls2, read__more_bytes_to_read_than_available_in_file) {
 	syscalls2__close(fd);
 
 	free_data_block_pointer(block1);
+	free_inode(inod);
+	free_disk_emulator();
+}
+
+TEST(TestSyscalls2, pwrite__write_after_end_of_file) {
+	struct data_block *block1;
+	struct inode * inod;
+	char buffer[256];
+	char buffer2[7 * BLOCK_SIZE];
+	int fd1, fd2, i;
+
+	init_disk_emulator();
+	create_fs();
+
+	inod = ialloc();
+
+	syscall2__pid = 2122; // Simulate a Process calling syscalls2__open
+	syscall2__namei = inod->inode_id; // "stub" namei by returning this inode id
+
+	block1 = data_block_alloc();
+
+	memset(block1->block, 'a', 15);
+	bwrite(block1);
+
+	inod->direct_blocks[4] = block1->data_block_id;
+	inod->num_blocks = 5; // 5 blocks are used in this file
+	inod->num_used_bytes_in_last_block = 15; // end of file is at byte offset 16 included in 5th block
+	put_inode(inod);
+
+
+	fd1 = syscalls2__open("filepath", O_WRONLY);
+
+	memset(buffer, 'b', 15);
+	syscalls2__pwrite(fd1, buffer, 7, 6 * BLOCK_SIZE + 20);
+
+	syscalls2__close(fd1);
+
+	free_inode(inod);
+	inod = get_inode(syscall2__namei);
+	TEST_ASSERT_EQUAL(7, inod->num_blocks);
+	TEST_ASSERT_EQUAL(27, inod->num_used_bytes_in_last_block);
+
+	fd2 = syscalls2__open("filepath", O_RDONLY);
+	TEST_ASSERT_EQUAL(6 * BLOCK_SIZE + 27, syscalls2__pread(fd2, buffer2, 7 * BLOCK_SIZE, 0));
+
+	for (i = 0; i < 4 * BLOCK_SIZE; i++) {
+		TEST_ASSERT_EQUAL(0, buffer2[i]);
+	}
+
+	for (i = 4 * BLOCK_SIZE; i < 4 * BLOCK_SIZE + 15; i++) {
+		TEST_ASSERT_EQUAL('a', buffer2[i]);
+	}
+
+	for (i = 4 * BLOCK_SIZE + 15; i < 6 * BLOCK_SIZE + 20; i++) {
+		TEST_ASSERT_EQUAL(0, buffer2[i]);
+	}
+
+	for (i = 6 * BLOCK_SIZE + 20; i < 6 * BLOCK_SIZE + 27; i++) {
+		TEST_ASSERT_EQUAL('b', buffer2[i]);
+	}
+
+	TEST_ASSERT_EQUAL(0, buffer2[6 * BLOCK_SIZE + 27]);
+
+	syscalls2__close(fd2);
+
+	free_inode(inod);
+	free_disk_emulator();
+}
+
+TEST(TestSyscalls2, pwrite__write_in_a_block_that_was_already_written) {
+	struct data_block *block1;
+	struct inode * inod;
+	char buffer[2 * BLOCK_SIZE];
+	char buffer2[2 * BLOCK_SIZE];
+	int fd1, fd2, i;
+
+	init_disk_emulator();
+	create_fs();
+
+	inod = ialloc();
+
+	syscall2__pid = 2122; // Simulate a Process calling syscalls2__open
+	syscall2__namei = inod->inode_id; // "stub" namei by returning this inode id
+
+	block1 = data_block_alloc();
+
+	memset(&block1->block[10], 'a', 5);
+	bwrite(block1);
+
+	inod->direct_blocks[1] = block1->data_block_id;
+	inod->num_blocks = 2;
+	inod->num_used_bytes_in_last_block = 15;
+	put_inode(inod);
+
+
+	fd1 = syscalls2__open("filepath", O_WRONLY);
+
+	memset(buffer, 'b', BLOCK_SIZE + 8);
+	syscalls2__pwrite(fd1, buffer, BLOCK_SIZE + 8, 0);
+
+	syscalls2__close(fd1);
+
+	free_inode(inod);
+	inod = get_inode(syscall2__namei);
+	TEST_ASSERT_EQUAL(2, inod->num_blocks);
+	TEST_ASSERT_EQUAL(15, inod->num_used_bytes_in_last_block);
+
+	fd2 = syscalls2__open("filepath", O_RDONLY);
+	TEST_ASSERT_EQUAL(BLOCK_SIZE + 15, syscalls2__pread(fd2, buffer2, 2 * BLOCK_SIZE, 0));
+
+	for (i = 0; i < BLOCK_SIZE + 8; i++) {
+		TEST_ASSERT_EQUAL('b', buffer2[i]);
+	}
+
+	for (i = BLOCK_SIZE + 8; i < BLOCK_SIZE + 10; i++) {
+		TEST_ASSERT_EQUAL(0, buffer2[i]);
+	}
+
+	for (i = BLOCK_SIZE + 10; i < BLOCK_SIZE + 15; i++) {
+		TEST_ASSERT_EQUAL('a', buffer2[i]); // Make sure we have not overriden the existing characters in the block
+	}
+
+	TEST_ASSERT_EQUAL(0, buffer2[BLOCK_SIZE + 15]);
+
+	syscalls2__close(fd2);
+
 	free_inode(inod);
 	free_disk_emulator();
 }
