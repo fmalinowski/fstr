@@ -11,6 +11,11 @@ int syscalls1__mknod(const char *path, mode_t mode, dev_t dev);
 int syscalls1__readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset);
 int syscalls1__unlink(const char *path);
 int syscalls1__rmdir(const char *path);
+
 int syscalls1__lstat(const char *path, struct stat *buf);
+int syscalls1__utimens(const char *path, const struct timespec tv[2]);
+
+int syscalls1__chmod(const char *path, mode_t mode);
+int syscalls1__chown(const char *path, uid_t uid, gid_t gid);
 
 #endif
