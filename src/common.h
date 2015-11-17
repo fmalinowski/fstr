@@ -4,20 +4,16 @@
 #define FUSE_USE_VERSION 26
 #define __STDC_FORMAT_MACROS 1
 
-#include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
 #include <fuse.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <sys/stat.h>
 #include <time.h>
-//#include <unistd.h>
 #include <math.h>
 #include <inttypes.h>
 #include <libgen.h>
-#define DEBUG
+
 #ifdef DEBUG
 #define LOGD(A, ...) printf("%s:%d " A "\n", __FILE__, __LINE__, ##__VA_ARGS__);
 #else
@@ -104,6 +100,8 @@ struct dir_block {
     int inode_ids[BLOCK_SIZE / NAMEI_ENTRY_SIZE];
     char names[BLOCK_SIZE / NAMEI_ENTRY_SIZE][NAMEI_ENTRY_SIZE - sizeof(int)];
 };
+
+int init_superblock(void);
 
 int commit_superblock(void);
 

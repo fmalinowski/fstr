@@ -8,6 +8,18 @@ struct superblock superblock = {
 	.commit = commit_superblock
 };
 
+int init_superblock(void) {
+	struct data_block block;
+	if(read_block(0, &block.block)) {
+		fprintf(stderr, "Failed to read superblock\n");
+		return -1;
+	}
+
+	memcpy(&superblock, &block.block, sizeof(struct superblock));
+
+	return 0;
+}
+
 int commit_superblock(void) {
 	return write_block(0, &superblock, sizeof(struct superblock));
 }
