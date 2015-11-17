@@ -4,4 +4,4 @@ addons:
     packages:
       - libfuse-dev
 script:
-  - make
+  - sudo make
