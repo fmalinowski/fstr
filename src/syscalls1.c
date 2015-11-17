@@ -16,10 +16,20 @@ int syscalls1__mkdir(const char *path, mode_t mode) {
 		return -1;
 	}
 
+	// Check for name length
+	char *name = basename(strdup(path));
+	size_t max_name_length = NAMEI_ENTRY_SIZE - sizeof(int) - 1;
+	if(strlen(name) > max_name_length) {
+		fprintf(stderr, "file name too long\n");
+		errno = ENAMETOOLONG;
+		return -1;
+	}
+
 	// Fetch parent inode
 	struct inode *parent_inode = get_inode(get_parent_inode_id(path));
 	if(parent_inode == NULL) {
 		fprintf(stderr, "failed to get parent inode id\n");
+		errno = ENOENT;
 		return -1;
 	}
 
@@ -66,7 +76,7 @@ int syscalls1__mkdir(const char *path, mode_t mode) {
 	put_inode(inode);
 
 	// Add new entry in parent inode
-	if(add_entry_to_parent(parent_inode, inode->inode_id, basename(strdup(path))) == -1) {
+	if(add_entry_to_parent(parent_inode, inode->inode_id, name) == -1) {
 		fprintf(stderr, "Failed to add entry to parent dir block\n");
 		return -1;
 	}
@@ -85,9 +95,12 @@ int syscalls1__mknod(const char *path, mode_t mode, dev_t dev) {
 		return -1;
 	}
 
+	// Check for name length
 	char *name = basename(strdup(path));
-	if(name == NULL || name[0] == '\0') {
-		fprintf(stderr, "failed to extract basename\n");
+	size_t max_name_length = NAMEI_ENTRY_SIZE - sizeof(int) - 1;
+	if(strlen(name) > max_name_length) {
+		fprintf(stderr, "file name too long\n");
+		errno = ENAMETOOLONG;
 		return -1;
 	}
 
@@ -95,6 +108,7 @@ int syscalls1__mknod(const char *path, mode_t mode, dev_t dev) {
 	struct inode *parent_inode = get_inode(get_parent_inode_id(path));
 	if(parent_inode == NULL) {
 		fprintf(stderr, "failed to get parent inode\n");
+		errno = ENOENT;
 		return -1;
 	}
 
@@ -132,6 +146,7 @@ int syscalls1__readdir(const char *path, void *buffer, fuse_fill_dir_t filler, o
 	struct inode *inode = get_inode(namei(path));
 	if(inode == NULL) {
 		fprintf(stderr, "failed to get inode\n");
+		errno = ENOENT;
 		return -1;
 	}
 
@@ -161,6 +176,7 @@ int syscalls1__unlink(const char *path) {
 	struct inode *inode = get_inode(namei(path));
 	if(inode == NULL) {
 		fprintf(stderr, "failed to get inode\n");
+		errno = ENOENT;
 		return -1;
 	}
 
@@ -179,6 +195,7 @@ int syscalls1__unlink(const char *path) {
 	struct inode *parent_inode = get_inode(get_parent_inode_id(path));
 	if(parent_inode == NULL) {
 		fprintf(stderr, "failed to get parent inode\n");
+		errno = ENOENT;
 		return -1;
 	}
 
@@ -208,6 +225,7 @@ int syscalls1__rmdir(const char *path) {
 	struct inode *inode = get_inode(namei(path));
 	if(inode == NULL) {
 		fprintf(stderr, "failed to get inode\n");
+		errno = ENOENT;
 		return -1;
 	}
 
@@ -254,6 +272,7 @@ int syscalls1__rmdir(const char *path) {
 	struct inode *parent_inode = get_inode(get_parent_inode_id(path));
 	if(parent_inode == NULL) {
 		fprintf(stderr, "failed to get parent inode\n");
+		errno = ENOENT;
 		return -1;
 	}
 
@@ -277,12 +296,14 @@ int syscalls1__rmdir(const char *path) {
 
 
 int syscalls1__lstat(const char *path, struct stat *buf) {
+
 	struct inode *inode = get_inode(namei(path));
 	if(inode == NULL) {
 		fprintf(stderr, "failed to get inode\n");
 		errno = ENOENT;
 		return -1;
 	}
+
 	buf->st_ino = inode->inode_id;
 	buf->st_mode = inode->mode;
 	buf->st_nlink = inode->links_nb;
@@ -299,5 +320,51 @@ int syscalls1__lstat(const char *path, struct stat *buf) {
 	buf->st_blksize = BLOCK_SIZE;
 	buf->st_atime = inode->last_accessed_file;
 	buf->st_mtime = inode->last_modified_inode;
+	return 0;
+}
+
+int syscalls1__utimens(const char *path, const struct timespec tv[2]) {
+
+	struct inode *inode = get_inode(namei(path));
+	if(inode == NULL) {
+		fprintf(stderr, "failed to get inode\n");
+		errno = ENOENT;
+		return -1;
+	}
+
+	if(tv == NULL) {
+		inode->last_accessed_file = time(NULL);
+		inode->last_modified_file = time(NULL);
+	} else {
+		inode->last_accessed_file += tv[0].tv_sec;
+		inode->last_modified_file += tv[1].tv_sec;
+	}
+	return 0;
+}
+
+int syscalls1__chmod(const char *path, mode_t mode) {
+
+	struct inode *inode = get_inode(namei(path));
+	if(inode == NULL) {
+		fprintf(stderr, "failed to get inode\n");
+		errno = ENOENT;
+		return -1;
+	}
+	
+	inode->mode = mode;
+	return 0;
+}
+
+int syscalls1__chown(const char *path, uid_t uid, gid_t gid) {
+
+	struct inode *inode = get_inode(namei(path));
+	if(inode == NULL) {
+		fprintf(stderr, "failed to get inode\n");
+		errno = ENOENT;
+		return -1;
+	}
+
+	inode->uid = uid;
+	inode->gid = gid;
 	return 0;
 }

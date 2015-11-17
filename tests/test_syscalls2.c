@@ -28,11 +28,14 @@ TEST_GROUP_RUNNER(TestSyscalls2) {
 	RUN_TEST_CASE(TestSyscalls2, convert_byte_offset_to_ith_datablock);
 	RUN_TEST_CASE(TestSyscalls2, is_ith_block_in_range_of_direct_and_indirect_blocks);
 	RUN_TEST_CASE(TestSyscalls2, get_ith_datablock_number);
+	RUN_TEST_CASE(TestSyscalls2, set_ith_datablock_number);
 	RUN_TEST_CASE(TestSyscalls2, read__error_cases__fd_does_not_exist__or_fde_set_to_write_only__or_offset_too_big);
 	RUN_TEST_CASE(TestSyscalls2, read__read_bytes_in_last_block_of_file);
 	RUN_TEST_CASE(TestSyscalls2, read__less_bytes_to_read_than_a_block);
 	RUN_TEST_CASE(TestSyscalls2, read__more_bytes_to_read_than_a_block);
 	RUN_TEST_CASE(TestSyscalls2, read__more_bytes_to_read_than_available_in_file);
+	RUN_TEST_CASE(TestSyscalls2, pwrite__write_after_end_of_file);
+	RUN_TEST_CASE(TestSyscalls2, pwrite__write_in_a_block_that_was_already_written);
 }
 
 
@@ -488,7 +491,10 @@ TEST(TestSyscalls2, get_ith_datablock_number) {
 
 	struct inode inod;
 
-	// Test of direct blocks
+	/* *******
+		TEST OF DIRECT BLOCKS
+	******* */
+
 	for (i = 1; i <= NUM_DIRECT_BLOCKS; i++) {
 		db = data_block_alloc();
 		inod.direct_blocks[i-1] = db->data_block_id;
@@ -499,7 +505,10 @@ TEST(TestSyscalls2, get_ith_datablock_number) {
 		free_data_block_pointer(db);
 	}
 
-	// Test of indirect blocks
+	/* *******
+		TEST OF SINGLE INDIRECT BLOCKS
+	******* */
+
 	single_indirect_db = data_block_alloc();
 	single_indirect_block_id= single_indirect_db->data_block_id;
 	inod.single_indirect_block = single_indirect_block_id;
@@ -664,6 +673,123 @@ TEST(TestSyscalls2, get_ith_datablock_number) {
 	free_disk_emulator();
 }
 
+TEST(TestSyscalls2, set_ith_datablock_number) {
+	big_int i;
+	int inode_number;
+
+	init_disk_emulator();
+	create_fs();
+
+	struct inode * inod = ialloc();
+	inode_number = inod->inode_id;
+
+	/* *******
+		TEST OF DIRECT BLOCKS
+	******* */
+
+	for (i = 1; i <= NUM_DIRECT_BLOCKS; i++) {
+		TEST_ASSERT_EQUAL(0, get_ith_datablock_number(inod, i));
+		set_ith_datablock_number(inod, i, i);
+
+		free_inode(inod);
+		inod = get_inode(inode_number);
+		TEST_ASSERT_EQUAL(i, inod->direct_blocks[i-1]);
+		TEST_ASSERT_EQUAL(i, get_ith_datablock_number(inod, i));
+	}
+
+
+	/* *******
+		TEST OF SINGLE INDIRECT BLOCKS
+	******* */
+
+	TEST_ASSERT_EQUAL(0, inod->single_indirect_block);
+	
+	// Test first block number in indirect block is obtained correctly
+	TEST_ASSERT_EQUAL(0, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + 1));
+	set_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + 1, 433);
+	
+	free_inode(inod);
+	inod = get_inode(inode_number);
+	TEST_ASSERT_EQUAL(433, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + 1));
+	TEST_ASSERT(inod->single_indirect_block != 0);
+
+	// Test last block number in indirect block is obtained correctly
+	TEST_ASSERT_EQUAL(0, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH));
+	set_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH, 1734);
+	
+	free_inode(inod);
+	inod = get_inode(inode_number);
+	TEST_ASSERT_EQUAL(1734, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH));
+	
+
+	/* *******
+		TEST OF DOUBLE INDIRECT BLOCKS
+	******* */
+
+	TEST_ASSERT_EQUAL(0, inod->double_indirect_block);
+
+	// Set first datablock in level 2 of double indirect list
+	TEST_ASSERT_EQUAL(0, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + 1));
+	set_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + 1, 67);
+
+	free_inode(inod);
+	inod = get_inode(inode_number);
+	TEST_ASSERT_EQUAL(67, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + 1));
+	TEST_ASSERT(inod->double_indirect_block != 0);
+
+	// Set first datablock in level 2 of the second datablock in level1 of double indirect list
+	TEST_ASSERT_EQUAL(0, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH + 1));
+	set_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH + 1, 10675);
+
+	free_inode(inod);
+	inod = get_inode(inode_number);
+	TEST_ASSERT_EQUAL(10675, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH + 1));
+
+	// Set last datablock in level 2 of the last datablock in level1 of double indirect list
+	TEST_ASSERT_EQUAL(0, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH));
+	set_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH, 876);
+
+	free_inode(inod);
+	inod = get_inode(inode_number);
+	TEST_ASSERT_EQUAL(876, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH));
+
+
+
+	/* *******
+		TEST OF TRIPLE INDIRECT BLOCKS
+	******* */
+
+	TEST_ASSERT_EQUAL(0, inod->triple_indirect_block);
+
+	// Set first datablock in level 3 of the first datablock in level 2 of the first datablock in level 1 of triple indirect list
+	TEST_ASSERT_EQUAL(0, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + 1));
+	set_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + 1, 123);
+
+	free_inode(inod);
+	inod = get_inode(inode_number);
+	TEST_ASSERT_EQUAL(123, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + 1));
+	TEST_ASSERT(inod->triple_indirect_block != 0);
+
+	// Set first datablock in level 3 of the first datablock in level 2 of the second datablock in level 1 of triple indirect list
+	TEST_ASSERT_EQUAL(0, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + 2 * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + 1));
+	set_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + 2 * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + 1, 989);
+
+	free_inode(inod);
+	inod = get_inode(inode_number);
+	TEST_ASSERT_EQUAL(989, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + 2 * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + 1));
+
+	// Set last datablock in level 3 of the last datablock in level 2 of the last datablock in level 1 of triple indirect list
+	TEST_ASSERT_EQUAL(0, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH));
+	set_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH, 48973);
+
+	free_inode(inod);
+	inod = get_inode(inode_number);
+	TEST_ASSERT_EQUAL(48973, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH));
+
+	free_inode(inod);
+	free_disk_emulator();
+}
+
 TEST(TestSyscalls2, read__error_cases__fd_does_not_exist__or_fde_set_to_write_only__or_offset_too_big) {
 	struct inode * inod;
 	char buffer[256];
@@ -692,7 +818,7 @@ TEST(TestSyscalls2, read__error_cases__fd_does_not_exist__or_fde_set_to_write_on
 	fd2 = syscalls2__open("filepath", O_RDONLY);
 	TEST_ASSERT_EQUAL(3, fd2);
 
-	TEST_ASSERT_EQUAL(-1, syscalls2__pread(fd2, buffer, 1, 1)); // We try to read after limit of file, it cannot work
+	TEST_ASSERT_EQUAL(0, syscalls2__pread(fd2, buffer, 1, 1)); // We try to read after limit of file, it cannot work
 	
 	syscalls2__close(fd2);
 
@@ -875,12 +1001,12 @@ TEST(TestSyscalls2, read__more_bytes_to_read_than_available_in_file) {
 
 	block1 = data_block_alloc();
 
-	memset(block1->block, 'a', 15); // Write a full block of a
+	memset(block1->block, 'a', 15);
 	bwrite(block1);
 
 	inod->direct_blocks[4] = block1->data_block_id;
-	inod->num_blocks = 5; // 10 blocks are used in this file
-	inod->num_used_bytes_in_last_block = 15; // end of file is at byte offset 100 included in 6th block
+	inod->num_blocks = 5; // 5 blocks are used in this file
+	inod->num_used_bytes_in_last_block = 15; // end of file is at byte offset 15 included in 6th block
 	put_inode(inod);
 
 	fd = syscalls2__open("filepath", O_RDONLY);
@@ -898,6 +1024,132 @@ TEST(TestSyscalls2, read__more_bytes_to_read_than_available_in_file) {
 	syscalls2__close(fd);
 
 	free_data_block_pointer(block1);
+	free_inode(inod);
+	free_disk_emulator();
+}
+
+TEST(TestSyscalls2, pwrite__write_after_end_of_file) {
+	struct data_block *block1;
+	struct inode * inod;
+	char buffer[256];
+	char buffer2[7 * BLOCK_SIZE];
+	int fd1, fd2, i;
+
+	init_disk_emulator();
+	create_fs();
+
+	inod = ialloc();
+
+	syscall2__pid = 2122; // Simulate a Process calling syscalls2__open
+	syscall2__namei = inod->inode_id; // "stub" namei by returning this inode id
+
+	block1 = data_block_alloc();
+
+	memset(block1->block, 'a', 15);
+	bwrite(block1);
+
+	inod->direct_blocks[4] = block1->data_block_id;
+	inod->num_blocks = 5; // 5 blocks are used in this file
+	inod->num_used_bytes_in_last_block = 15; // end of file is at byte offset 16 included in 5th block
+	put_inode(inod);
+
+
+	fd1 = syscalls2__open("filepath", O_WRONLY);
+
+	memset(buffer, 'b', 15);
+	syscalls2__pwrite(fd1, buffer, 7, 6 * BLOCK_SIZE + 20);
+
+	syscalls2__close(fd1);
+
+	free_inode(inod);
+	inod = get_inode(syscall2__namei);
+	TEST_ASSERT_EQUAL(7, inod->num_blocks);
+	TEST_ASSERT_EQUAL(27, inod->num_used_bytes_in_last_block);
+
+	fd2 = syscalls2__open("filepath", O_RDONLY);
+	TEST_ASSERT_EQUAL(6 * BLOCK_SIZE + 27, syscalls2__pread(fd2, buffer2, 7 * BLOCK_SIZE, 0));
+
+	for (i = 0; i < 4 * BLOCK_SIZE; i++) {
+		TEST_ASSERT_EQUAL(0, buffer2[i]);
+	}
+
+	for (i = 4 * BLOCK_SIZE; i < 4 * BLOCK_SIZE + 15; i++) {
+		TEST_ASSERT_EQUAL('a', buffer2[i]);
+	}
+
+	for (i = 4 * BLOCK_SIZE + 15; i < 6 * BLOCK_SIZE + 20; i++) {
+		TEST_ASSERT_EQUAL(0, buffer2[i]);
+	}
+
+	for (i = 6 * BLOCK_SIZE + 20; i < 6 * BLOCK_SIZE + 27; i++) {
+		TEST_ASSERT_EQUAL('b', buffer2[i]);
+	}
+
+	TEST_ASSERT_EQUAL(0, buffer2[6 * BLOCK_SIZE + 27]);
+
+	syscalls2__close(fd2);
+
+	free_inode(inod);
+	free_disk_emulator();
+}
+
+TEST(TestSyscalls2, pwrite__write_in_a_block_that_was_already_written) {
+	struct data_block *block1;
+	struct inode * inod;
+	char buffer[2 * BLOCK_SIZE];
+	char buffer2[2 * BLOCK_SIZE];
+	int fd1, fd2, i;
+
+	init_disk_emulator();
+	create_fs();
+
+	inod = ialloc();
+
+	syscall2__pid = 2122; // Simulate a Process calling syscalls2__open
+	syscall2__namei = inod->inode_id; // "stub" namei by returning this inode id
+
+	block1 = data_block_alloc();
+
+	memset(&block1->block[10], 'a', 5);
+	bwrite(block1);
+
+	inod->direct_blocks[1] = block1->data_block_id;
+	inod->num_blocks = 2;
+	inod->num_used_bytes_in_last_block = 15;
+	put_inode(inod);
+
+
+	fd1 = syscalls2__open("filepath", O_WRONLY);
+
+	memset(buffer, 'b', BLOCK_SIZE + 8);
+	syscalls2__pwrite(fd1, buffer, BLOCK_SIZE + 8, 0);
+
+	syscalls2__close(fd1);
+
+	free_inode(inod);
+	inod = get_inode(syscall2__namei);
+	TEST_ASSERT_EQUAL(2, inod->num_blocks);
+	TEST_ASSERT_EQUAL(15, inod->num_used_bytes_in_last_block);
+
+	fd2 = syscalls2__open("filepath", O_RDONLY);
+	TEST_ASSERT_EQUAL(BLOCK_SIZE + 15, syscalls2__pread(fd2, buffer2, 2 * BLOCK_SIZE, 0));
+
+	for (i = 0; i < BLOCK_SIZE + 8; i++) {
+		TEST_ASSERT_EQUAL('b', buffer2[i]);
+	}
+
+	for (i = BLOCK_SIZE + 8; i < BLOCK_SIZE + 10; i++) {
+		TEST_ASSERT_EQUAL(0, buffer2[i]);
+	}
+
+	for (i = BLOCK_SIZE + 10; i < BLOCK_SIZE + 15; i++) {
+		TEST_ASSERT_EQUAL('a', buffer2[i]); // Make sure we have not overriden the existing characters in the block
+	}
+
+	TEST_ASSERT_EQUAL(0, buffer2[BLOCK_SIZE + 15]);
+
+	syscalls2__close(fd2);
+
 	free_inode(inod);
 	free_disk_emulator();
 }

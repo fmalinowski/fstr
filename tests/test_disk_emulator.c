@@ -51,7 +51,7 @@ static int are_character_sequences_equal(char * s1, char * s2, int length) {
 }
 
 TEST(TestDiskEmulator, init_disk_emulator_and_free_disk_emulator_well) {
-	free_disk_emulator();
+	//free_disk_emulator();
 	TEST_ASSERT_EQUAL(0, init_disk_emulator());
 	TEST_ASSERT_EQUAL(-1, init_disk_emulator());
 	free_disk_emulator();
@@ -69,7 +69,6 @@ TEST(TestDiskEmulator, write_block__succeed_if_write_is_inside_limits_of_disk) {
 	
 	TEST_ASSERT_EQUAL(0, write_block(0, buffer, strlen(buffer) + 1)); // Write in first block
 	TEST_ASSERT_EQUAL(0, write_block(NUM_BLOCKS - 1, buffer, strlen(buffer) + 1)); // Write in last block
-
 	TEST_ASSERT_EQUAL(-1, write_block(-1, buffer, strlen(buffer) + 1)); // Write doesn't work before 1st block
 	TEST_ASSERT_EQUAL(-1, write_block(NUM_BLOCKS, buffer, strlen(buffer) + 1)); // Write doesn't work after last block
 	

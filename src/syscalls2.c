@@ -556,7 +556,7 @@ ssize_t syscalls2__pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 
 	if (offset >= get_size_of_file(inod->num_blocks, inod->num_used_bytes_in_last_block)) {
 		errno = EINVAL;
-		return -1; // request to read at position bigger than size of file
+		return 0; // request to read at position bigger than size of file
 	}
 
 	block_num_pos = convert_byte_offset_to_ith_datablock(offset);
@@ -687,15 +687,19 @@ ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offse
 	}
 
 	// Update the inode for the number of blocks used and position of last byte in file
-	if (current_offset_in_block == 0) {
-		inod->num_blocks = block_num_pos - 1;
-		inod->num_used_bytes_in_last_block = BLOCK_SIZE;
-	}
-	else {
-		inod->num_blocks = block_num_pos;
-		inod->num_used_bytes_in_last_block = current_offset_in_block;	
+	if ((block_num_pos > inod->num_blocks) || (block_num_pos == inod->num_blocks && current_offset_in_block > inod->num_used_bytes_in_last_block)) {
+		if (current_offset_in_block == 0) {
+			inod->num_blocks = block_num_pos - 1;
+			inod->num_used_bytes_in_last_block = BLOCK_SIZE;
+		}
+		else {
+			inod->num_blocks = block_num_pos;
+			inod->num_used_bytes_in_last_block = current_offset_in_block;
+		}
+		inod->last_modified_inode = time(NULL);
 	}
 
+	inod->last_modified_file = time(NULL);
 	put_inode(inod);
 
 	free(inod);

@@ -1,5 +1,11 @@
 #include "disk_emulator.h"
 #include "mkfs.h"
+#include "common.h"
+// in memory emulation of file system
+//#define IN_MEMORY_FS
+
+
+#ifdef IN_MEMORY_FS
 
 static char **block_data;
 
@@ -53,4 +59,86 @@ int write_block(big_int block_id, void * buffer, size_t buffer_size) {
 	}
 	return -1;
 }
+
+#else
+
+static int disk_store;
+int disk_created = -1;
+int init_disk_emulator(void) { 
+	
+	if(disk_created == -1){
+		disk_store = open(DISK_STORE_PATH, O_CREAT | O_RDWR);
+		if (disk_store == -1){
+    		fprintf(stderr, "Error opening disk store: %d\n", errno);
+    		return -ENODEV; // failure
+  		}
+  		LOGD("DISK_EMULATOR: File descriptor of disk: %d. Creating file system...", disk_store);
+		disk_created = 0;
+		return create_fs(); // success
+	}
+	else{
+		LOGD("DISK_EMULATOR: disk store already initialised");
+		return -1;	
+	}
+}
+
+void free_disk_emulator(void){
+	if(disk_created == 0 && close(disk_store) == 0){
+    	disk_created = -1;
+  		LOGD("FREE_DISK_EMULATOR: Disk successfully closed.");  	
+  	}
+  	else{
+  		LOGD("FREE_DISK_EMULATOR: Did not close disk.");
+  		fprintf(stderr, "Error closing disk\n");
+    }
+}
+
+int read_block(big_int block_id, void * target) {
+	if(block_id < NUM_BLOCKS){
+		if(lseek(disk_store, block_id * BLOCK_SIZE, SEEK_SET) != -1){ // seek to position of block id
+			if(read(disk_store, target, BLOCK_SIZE) == BLOCK_SIZE){
+				LOGD("READ_BLOCK: successfully read block");
+				return 0; // read successful
+			}
+		}
+	}
+	LOGD("READ_BLOCK: block read unsuccessful");
+	return -1;
+}
+
+int write_block(big_int block_id, void * buffer, size_t buffer_size) {
+	if(block_id < NUM_BLOCKS){
+		if(lseek(disk_store, block_id * BLOCK_SIZE, SEEK_SET) != -1){
+			int bytes_written;
+			size_t copy_size = buffer_size < BLOCK_SIZE ? buffer_size : BLOCK_SIZE;
+			if((bytes_written = write(disk_store, buffer, copy_size)) != -1){
+
+				if(copy_size < BLOCK_SIZE){
+					void *temp = calloc(BLOCK_SIZE - copy_size, sizeof(int));
+					
+					if(temp && lseek(disk_store, (block_id * BLOCK_SIZE) + copy_size, SEEK_SET) != -1){
+						if(write(disk_store, temp, BLOCK_SIZE - copy_size) != -1){
+							LOGD("WRITE_BLOCK: successfully written bytes to block");
+							free(temp);
+							return 0; // Success				
+						}
+					}
+					if(temp){
+						free(temp);
+					}
+					LOGD("something went wrong");
+					return -1;
+				}
+				LOGD("WRITE_BLOCK: successfully written %d bytes to block", bytes_written);
+				return 0; // write successful	
+			}
+		}
+	}
+	LOGD("WRITE_BLOCK: block write unsuccessful");
+	return -1;
+}
+
+#endif
+
+
 
