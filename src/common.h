@@ -18,10 +18,10 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#define DISK_STORE_PATH "FSTR_DEV"
+#define DISK_STORE_PATH "/dev/FSTR_DEV"
 
 
-// #define DEBUG
+//#define DEBUG
 #ifdef DEBUG
 #define LOGD(A, ...) printf("%s:%d " A "\n", __FILE__, __LINE__, ##__VA_ARGS__);
 #else
