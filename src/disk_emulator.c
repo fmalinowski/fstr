@@ -1,4 +1,5 @@
 #include "disk_emulator.h"
+#include "mkfs.h"
 
 static char **block_data;
 
@@ -15,7 +16,8 @@ int init_disk_emulator(void) { // just for in memory simulation; substitue code 
 
 	// If malloc didn't work well
 	if (block_data) {
-		return 0;
+		// Only for in-memory emulation
+		return create_fs();
 	}
 	return -1;
 }
