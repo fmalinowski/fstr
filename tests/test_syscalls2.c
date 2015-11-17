@@ -21,7 +21,7 @@ TEST_GROUP_RUNNER(TestSyscalls2) {
 	RUN_TEST_CASE(TestSyscalls2, syscall2__get_pid);
 	RUN_TEST_CASE(TestSyscalls2, syscalls2__open);
 	RUN_TEST_CASE(TestSyscalls2, syscalls2__open__when_path_does_not_exist);
-	// RUN_TEST_CASE(TestSyscalls2, syscalls2__open__with_ocreate_mode); NEED TO FIX IT TO USE TANUJ FUNCTION
+	RUN_TEST_CASE(TestSyscalls2, syscalls2__open__with_ocreate_mode);
 	RUN_TEST_CASE(TestSyscalls2, syscalls2__close);
 	RUN_TEST_CASE(TestSyscalls2, syscalls2__open_syscalls2__close);
 	RUN_TEST_CASE(TestSyscalls2, get_size_of_file);

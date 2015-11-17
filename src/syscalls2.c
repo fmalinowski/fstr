@@ -4,7 +4,6 @@
 #include "common.h"
 #include "inode_table.h"
 #include "data_blocks_handler.h"
-#include "syscalls1.h"
 
 #ifdef SYSCALL2__TEST
 	static int namei(const char *path) {
@@ -12,16 +11,16 @@
 		return -1;
 	}
 
-	// int mknod(const char *path, mode_t mode, dev_t dev) {
-	// 	syscall2__mknod = mode; // We set the value of mode to make sure the call to mknod was done correctly
-	// 	if ((path && mode) || (path && mode && dev)) { // This is just to avoid the warning when compiling
-	// 		return 0;
-	// 	}
-	// 	return -1;
-	// }
+	static int syscalls1__mknod(const char *path, mode_t mode, dev_t dev) {
+		syscall2__mknod = mode; // We set the value of mode to make sure the call to mknod was done correctly
+		if ((path && mode) || (path && mode && dev)) { // This is just to avoid the warning when compiling
+			return 0;
+		}
+		return -1;
+	}
 #else
 	#include "namei.h"
-	// #include "syscalls1.h"
+	#include "syscalls1.h"
 #endif
 
 
