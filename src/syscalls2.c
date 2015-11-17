@@ -203,6 +203,7 @@ int syscalls2__open(const char *path, int oflag, ...) {
 	// Get inode number related to path (we suppose creation flag doesn't work in open for now as FUSE doesn't support it in open)
 	inode_number = namei(path);
 	if (inode_number == -1) {
+		errno = ENOENT;
 		return -1;
 	}
 
@@ -233,6 +234,7 @@ int syscalls2__open(const char *path, int oflag, ...) {
 		}
 		else {
 			free(inod);
+			errno = EACCES;
 			return -1;
 		}
 	}
@@ -257,6 +259,7 @@ int syscalls2__close(int fildes) {
 	fde = get_file_descriptor_entry(pid, fildes);
 
 	if (fde == NULL) {
+		errno = EBADF;
 		return -1;
 	}
 
@@ -541,51 +544,47 @@ ssize_t syscalls2__pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 	fde = get_file_descriptor_entry(pid, fildes);
 
 	if (fde == NULL) {
+		errno = EBADF;
 		return -1; // file descriptor doesn't exist
 	}
 
 	if ((fde->mode != READ) && (fde->mode != READ_WRITE)) {
+		errno = EBADF;
 		return -1;
 	}
 
 	inod = get_inode(fde->inode_number);
 
 	if (offset >= get_size_of_file(inod->num_blocks, inod->num_used_bytes_in_last_block)) {
+		errno = EINVAL;
 		return -1; // request to read at position bigger than size of file
 	}
 
 	block_num_pos = convert_byte_offset_to_ith_datablock(offset);
 	current_block_number = get_ith_datablock_number(inod, block_num_pos);
-	// db = bread(current_block_number);
 	db = NULL;
 
 	read_bytes = 0;
 	remaining_bytes = nbyte;
 	current_offset_in_block = offset % BLOCK_SIZE;
-	// printf("We're here A\n");
 
 	while (remaining_bytes > 0) {
 		if (remaining_bytes == nbyte) {
-			// printf("We're here B\n");
 			bytes_to_be_copied = min(BLOCK_SIZE - current_offset_in_block, remaining_bytes);
 		}
 		else {
-			// printf("We're here C\n");
 			bytes_to_be_copied = min(BLOCK_SIZE, remaining_bytes);
 		}
 
 		if (block_num_pos == inod->num_blocks) {
-			// printf("We're here D\n");
 			if ((inod->num_used_bytes_in_last_block == current_offset_in_block) && remaining_bytes > 0) {
-				// printf("We're here E\n");
 				// We have reached the end of the file and there are still some bytes to be read
 				fde->byte_offset = get_size_of_file(inod->num_blocks, inod->num_used_bytes_in_last_block);
-				return 0;
+				return read_bytes;
 			}
 			bytes_to_be_copied = min(bytes_to_be_copied, inod->num_used_bytes_in_last_block - current_offset_in_block);
 		}
 
-		// printf("We're here F, read_bytes: %zu, current_offset_in_block: %lld, bytes_to_be_copied: %zu, first_character: %c, block_number: %llu\n", read_bytes, current_offset_in_block, bytes_to_be_copied, db->block[current_offset_in_block], db->data_block_id);
 		if (current_block_number == 0) {
 			// Non allocated datablock so we fill with 0s only
 			memset(&((char *)buf)[read_bytes], 0, bytes_to_be_copied);
@@ -602,7 +601,6 @@ ssize_t syscalls2__pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 		remaining_bytes -= bytes_to_be_copied;
 
 		if (current_offset_in_block == 0) {
-			// printf("We're here G\n");
 			// We need to read the next datablock cause we have reached the end of a block in this read step
 			block_num_pos++;
 			current_block_number = get_ith_datablock_number(inod, block_num_pos);
@@ -635,10 +633,12 @@ ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offse
 	fde = get_file_descriptor_entry(pid, fildes);
 
 	if (fde == NULL) {
+		errno = EBADF;
 		return -1; // file descriptor doesn't exist
 	}
 
 	if ((fde->mode != WRITE) && (fde->mode != READ_WRITE)) {
+		errno = EBADF;
 		return -1;
 	}
 
@@ -648,6 +648,7 @@ ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offse
 	if (offset >= get_size_of_file(inod->num_blocks, inod->num_used_bytes_in_last_block) && !is_ith_block_in_range_of_direct_and_indirect_blocks(block_num_pos)) {
 		// request to write at position bigger than size of file
 		// AND We cannot allocate and write in a block that is not in the range of direct/indirect blocks
+		errno = EFBIG;
 		return -1;
 	}
 
@@ -656,6 +657,7 @@ ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offse
 	remaining_bytes = nbyte;
 	current_offset_in_block = offset % BLOCK_SIZE;
 	written_bytes = 0;
+
 
 	while (remaining_bytes > 0) {
 		bytes_to_be_copied = min(BLOCK_SIZE - current_offset_in_block, remaining_bytes);

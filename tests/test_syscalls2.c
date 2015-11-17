@@ -886,7 +886,7 @@ TEST(TestSyscalls2, read__more_bytes_to_read_than_available_in_file) {
 	fd = syscalls2__open("filepath", O_RDONLY);
 
 	memset(buffer, 0, 256);
-	TEST_ASSERT_EQUAL(0, syscalls2__pread(fd, buffer, 14, BLOCK_SIZE * 4 + 2)); // We read 14 characters
+	TEST_ASSERT_EQUAL(13, syscalls2__pread(fd, buffer, 14, BLOCK_SIZE * 4 + 2)); // We want to read 14 characters but EOF reached after 13 characters
 
 	for (i = 0; i < 13; i++) {
 		TEST_ASSERT_EQUAL('a', buffer[i]);

@@ -14,6 +14,7 @@
 #include <inttypes.h>
 #include <libgen.h>
 
+// #define DEBUG
 #ifdef DEBUG
 #define LOGD(A, ...) printf("%s:%d " A "\n", __FILE__, __LINE__, ##__VA_ARGS__);
 #else
