@@ -1,34 +1,22 @@
 #include "common.h"
 #include "disk_emulator.h"
 #include "mkfs.h"
-
-/*static const char *hello_str = "Hello World!\n";
-static const char *hello_path = "/hello";
+#include "syscalls1.h"
+#include "syscalls2.h"
 
 static int fstr_getattr(const char *path, struct stat *stbuf)
 {
-	int res = 0;
-
-    memset(stbuf, 0, sizeof(struct stat));
-    if (strcmp(path, "/") == 0) {
-        stbuf->st_mode = S_IFDIR | 0755;
-        stbuf->st_nlink = 2;
-    } else if (strcmp(path, hello_path) == 0) {
-        stbuf->st_mode = S_IFREG | 0444;
-        stbuf->st_nlink = 1;
-        stbuf->st_size = strlen(hello_str);
-    } else
-        res = -ENOENT;
-
-    return res;
-}*/
+    LOGD("called fstr_getattr");
+    if(syscalls1__lstat(path, stbuf) == -1)
+        return -errno;
+    return 0;
+}
 
 static int fstr_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi){
-	int ret_val = 0;
+	LOGD("you called syscalls1__readdir\n");
+    int ret_val = 0;
+    ret_val = syscalls1__readdir(path, buf, filler, offset);
     
-    filler(buf, ".", NULL, 0);
-	filler(buf, "..", NULL, 0);
-	LOGD("you called readdir\n");
 	return ret_val;
 }
 
@@ -38,9 +26,9 @@ static int fstr_open(const char *path, struct fuse_file_info *fi){
      
     LOGD("\nfstr_open(path\"%s\",..)\n", path);
     
-    fd = open(path, fi->flags);
+    fd = syscalls2__open(path, fi->flags);
     if (fd < 0){
-    	LOGD("OPEN error, fd: %d, fd");
+    	LOGD("OPEN error, fd: %d", fd);
     }
     fi->fh = fd;
     
@@ -52,7 +40,7 @@ static int fstr_mkdir(const char *path, mode_t mode){
     
     LOGD("\nfstr_mkdir(path=\"%s\", ..)\n", path);
     
-    ret_val = mkdir(path, mode);
+    ret_val = syscalls1__mkdir(path, mode);
     if (ret_val < 0){
     	LOGD("MKDIR error: %d", ret_val);
     }
@@ -64,7 +52,7 @@ static int fstr_rmdir(const char *path){
     
     LOGD("\nfstr_rmdir(path=\"%s\", ..)\n", path);
     
-    ret_val = rmdir(path);
+    ret_val = syscalls1__rmdir(path);
     if (ret_val < 0){
         LOGD("RMDIR error: %d", ret_val);
     }
@@ -77,7 +65,7 @@ static int fstr_mknod(const char *path, mode_t mode, dev_t dev){ // dev_t is dev
     
     LOGD("\nfstr_mknod(path=\"%s\", .., ..)\n", path);
     
-    ret_val = mknod(path, mode, dev);
+    ret_val = syscalls1__mknod(path, mode, dev);
 
     if(ret_val < 0){
     	
@@ -92,7 +80,7 @@ static int fstr_unlink(const char *path)
 
     LOGD("fstr_unlink(path=\"%s\")\n", path);
     
-    ret_val = unlink(path);
+    ret_val = syscalls1__unlink(path);
     if (ret_val < 0)
 		LOGD("UNLINK error: %d", ret_val);
     
@@ -104,7 +92,7 @@ static int fstr_release(const char *path, struct fuse_file_info *fi){
     
     LOGD("\nfstr_release(path=\"%s\", ..)\n", path);
 
-    ret_val = close(fi->fh); // In our implementation, this is unlink
+    ret_val = syscalls2__close(fi->fh); // In our implementation, this is syscalls1__unlink
     
     return ret_val;
 }
@@ -114,7 +102,7 @@ static int fstr_read(const char *path, char *buf, size_t size, off_t offset, str
     
     LOGD("\nfstr_read(path=\"%s\", .., .., .., ..)\n", path);
     
-    ret_val = pread(fi->fh, buf, size, offset);
+    ret_val = syscalls2__pread(fi->fh, buf, size, offset);
     if (ret_val < 0)
 		LOGD("READ error: %d", ret_val);
     
@@ -126,7 +114,7 @@ static int fstr_write(const char *path, const char *buf, size_t size, off_t offs
     
     LOGD("\nfstr_write(path=\"%s\", .., .., .., ..)\n", path);
     
-    ret_val = pwrite(fi->fh, buf, size, offset);
+    ret_val = syscalls2__pwrite(fi->fh, buf, size, offset);
     if (ret_val < 0)
 		LOGD("WRITE error: %d", ret_val);
     
@@ -135,7 +123,7 @@ static int fstr_write(const char *path, const char *buf, size_t size, off_t offs
 
 
 static struct fuse_operations fstr_fuse_oper = {
-	//.getattr	= fstr_getattr,
+	.getattr	= fstr_getattr,
 	.mkdir		= fstr_mkdir,
     .rmdir      = fstr_rmdir,
 	.mknod 		= fstr_mknod,

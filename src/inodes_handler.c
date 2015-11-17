@@ -3,14 +3,14 @@
 #include "block_utils.h"
 // ASSUMING INODE NUMBERS START FROM 1
 
-struct inode* iget(big_int inode_number){
+struct inode* iget(int inode_number){
 	struct inode * target;
 	int block_number_of_inode;
 	int inode_offset_in_block;
 	struct data_block * inode_block;
 
 	if(inode_number < 1 || inode_number > NUM_INODES){
-		LOGD("IGET: invalid inode number");
+		LOGD("IGET: invalid inode number %d", inode_number);
 		return NULL;
 	}
 	//printf("going to get inode number %d", (int)inode_number);
@@ -36,6 +36,7 @@ struct inode* iget(big_int inode_number){
 }
 
 int iput(struct inode * inod) {
+	LOGD("iput inode id: %d", inod->inode_id);
 	if(inod->links_nb == 0) {
 		// Free the inode and data blocks
 		struct data_block data_block;
@@ -110,6 +111,7 @@ struct inode* ialloc(void){  // THIS DOES NOT SET THE FILETYPE OF INODE. MUST BE
 	
 	if(bwrite(blok3) == 0){
 		if(commit_superblock() == 0){
+			LOGD("ialloc returning inode id: %d", inod->inode_id);
 			return inod;
 		}
 		else{

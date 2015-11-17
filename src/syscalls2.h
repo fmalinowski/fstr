@@ -38,11 +38,11 @@ struct file_descriptor_table {
 }; // We need to use dynamic allocation with that hash table otherwise it doesn't work correctly
 
 
-ssize_t pread(int fildes, void *buf, size_t nbyte, off_t offset); 
-ssize_t pwrite(int fildes, const void *buf, size_t nbyte, off_t offset);
+ssize_t syscalls2__pread(int fildes, void *buf, size_t nbyte, off_t offset); 
+ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offset);
 
-int open(const char *path, int oflag, ... ); // Supports O_RDONLY, O_RDWR, O_WRONLY. O_APPEND, O_CREAT and O_TRUNC are not yet supported
-int close(int fildes);
+int syscalls2__open(const char *path, int oflag, ... ); // Supports O_RDONLY, O_RDWR, O_WRONLY. O_APPEND, O_CREAT and O_TRUNC are not yet supported
+int syscalls2__close(int fildes);
 
 
 // UTILITIES

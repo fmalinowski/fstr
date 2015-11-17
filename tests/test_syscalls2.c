@@ -19,11 +19,11 @@ TEST_GROUP_RUNNER(TestSyscalls2) {
 	RUN_TEST_CASE(TestSyscalls2, get_file_descriptor_entry);
 	RUN_TEST_CASE(TestSyscalls2, delete_file_descriptor_entry);
 	RUN_TEST_CASE(TestSyscalls2, syscall2__get_pid);
-	RUN_TEST_CASE(TestSyscalls2, open);
-	RUN_TEST_CASE(TestSyscalls2, open__when_path_does_not_exist);
-	// RUN_TEST_CASE(TestSyscalls2, open__with_ocreate_mode); NEED TO FIX IT TO USE TANUJ FUNCTION
-	RUN_TEST_CASE(TestSyscalls2, close);
-	RUN_TEST_CASE(TestSyscalls2, open_close);
+	RUN_TEST_CASE(TestSyscalls2, syscalls2__open);
+	RUN_TEST_CASE(TestSyscalls2, syscalls2__open__when_path_does_not_exist);
+	// RUN_TEST_CASE(TestSyscalls2, syscalls2__open__with_ocreate_mode); NEED TO FIX IT TO USE TANUJ FUNCTION
+	RUN_TEST_CASE(TestSyscalls2, syscalls2__close);
+	RUN_TEST_CASE(TestSyscalls2, syscalls2__open_syscalls2__close);
 	RUN_TEST_CASE(TestSyscalls2, get_size_of_file);
 	RUN_TEST_CASE(TestSyscalls2, convert_byte_offset_to_ith_datablock);
 	RUN_TEST_CASE(TestSyscalls2, is_ith_block_in_range_of_direct_and_indirect_blocks);
@@ -230,7 +230,7 @@ TEST(TestSyscalls2, syscall2__get_pid) {
 	TEST_ASSERT_EQUAL(4, syscall2__get_pid());
 }
 
-TEST(TestSyscalls2, open) {
+TEST(TestSyscalls2, syscalls2__open) {
 	struct inode *inod1, *inod2;
 	struct file_descriptor_entry * fde;
 	big_int inode_id_1, inode_id_2;
@@ -240,13 +240,13 @@ TEST(TestSyscalls2, open) {
 
 
 	inod1 = ialloc(); // We allocate an inode just to have a valid inode number and use it for the purpose of the test
-	// 1st open of that file
-	syscall2__pid = 2122; // Simulate a Process calling open
+	// 1st syscalls2__open of that file
+	syscall2__pid = 2122; // Simulate a Process calling syscalls2__open
 	inode_id_1 = inod1->inode_id;
 	syscall2__namei = inode_id_1; // Inode number returned by namei (which is the inode number being created a few steps before)
 	free_inode(inod1);
 
-	TEST_ASSERT_EQUAL(3, open("whateverfile", O_RDONLY));
+	TEST_ASSERT_EQUAL(3, syscalls2__open("whateverfile", O_RDONLY));
 	
 	inod1 = get_inode(inode_id_1);
 	TEST_ASSERT((time(NULL) - inod1->last_accessed_file) <= 120); // We make sure last accessed time is set (2mn max the current time)
@@ -263,7 +263,7 @@ TEST(TestSyscalls2, open) {
 	syscall2__namei = inode_id_2;
 	free_inode(inod2);
 
-	TEST_ASSERT_EQUAL(4, open("otherfile", O_WRONLY));
+	TEST_ASSERT_EQUAL(4, syscalls2__open("otherfile", O_WRONLY));
 	
 	inod2 = get_inode(inode_id_2);
 	TEST_ASSERT((time(NULL) - inod2->last_accessed_file) <= 120); // We make sure last accessed time is set (2mn max the current time)
@@ -276,7 +276,7 @@ TEST(TestSyscalls2, open) {
 
 
 	syscall2__namei = inode_id_1;
-	TEST_ASSERT_EQUAL(5, open("whateverfile", O_RDWR));
+	TEST_ASSERT_EQUAL(5, syscalls2__open("whateverfile", O_RDWR));
 	
 	inod1 = get_inode(inode_id_1);
 	TEST_ASSERT((time(NULL) - inod1->last_accessed_file) <= 120); // We make sure last accessed time is set (2mn max the current time)
@@ -288,9 +288,9 @@ TEST(TestSyscalls2, open) {
 	free_inode(inod1);
 
 
-	syscall2__pid = 1783; // We change the process calling open
+	syscall2__pid = 1783; // We change the process calling syscalls2__open
 	syscall2__namei = inode_id_1;
-	TEST_ASSERT_EQUAL(3, open("whateverfile", O_RDWR));
+	TEST_ASSERT_EQUAL(3, syscalls2__open("whateverfile", O_RDWR));
 	
 	inod1 = get_inode(inode_id_1);
 	TEST_ASSERT((time(NULL) - inod1->last_accessed_file) <= 120); // We make sure last accessed time is set (2mn max the current time)
@@ -306,12 +306,12 @@ TEST(TestSyscalls2, open) {
 	free_disk_emulator();
 }
 
-TEST(TestSyscalls2, open__when_path_does_not_exist) {
+TEST(TestSyscalls2, syscalls2__open__when_path_does_not_exist) {
 	syscall2__namei = -1; // Simulate the fact that namei returns -1 for a path. It corresponds to a non valid path
-	TEST_ASSERT_EQUAL(-1, open("invalid_path", O_RDWR));
+	TEST_ASSERT_EQUAL(-1, syscalls2__open("invalid_path", O_RDWR));
 }
 
-TEST(TestSyscalls2, open__with_ocreate_mode) {
+TEST(TestSyscalls2, syscalls2__open__with_ocreate_mode) {
 	struct inode * inod;
 	struct file_descriptor_entry * fde;
 	big_int inode_id_1;
@@ -321,13 +321,13 @@ TEST(TestSyscalls2, open__with_ocreate_mode) {
 
 	inod = ialloc(); // We allocate an inode just to have a valid inode number and use it for the purpose of the test
 
-	syscall2__pid = 2122; // Simulate a Process calling open
+	syscall2__pid = 2122; // Simulate a Process calling syscalls2__open
 	inode_id_1 = inod->inode_id;
 	syscall2__namei = inode_id_1;
 	free_inode(inod);
 
-	TEST_ASSERT_EQUAL(3, open("whateverfile", O_CREAT|O_WRONLY, 700));
-	TEST_ASSERT_EQUAL(700, syscall2__mknod); // Make sure we called mknod from open and the right mode was provided to mknod
+	TEST_ASSERT_EQUAL(3, syscalls2__open("whateverfile", O_CREAT|O_WRONLY, 700));
+	TEST_ASSERT_EQUAL(700, syscall2__mknod); // Make sure we called mknod from syscalls2__open and the right mode was provided to mknod
 
 
 	inod = get_inode(inode_id_1);
@@ -340,8 +340,8 @@ TEST(TestSyscalls2, open__with_ocreate_mode) {
 	free_inode(inod);
 
 
-	TEST_ASSERT_EQUAL(4, open("whateverfile", O_CREAT|O_RDWR, 751));
-	TEST_ASSERT_EQUAL(751, syscall2__mknod); // Make sure we called mknod from open and the right mode was provided to mknod
+	TEST_ASSERT_EQUAL(4, syscalls2__open("whateverfile", O_CREAT|O_RDWR, 751));
+	TEST_ASSERT_EQUAL(751, syscall2__mknod); // Make sure we called mknod from syscalls2__open and the right mode was provided to mknod
 
 	// COMMENTED OUT UNTIL IGET AFTER IPUT IS FIXED IN INODES_HANDLER
 	inod = get_inode(inode_id_1);
@@ -357,11 +357,11 @@ TEST(TestSyscalls2, open__with_ocreate_mode) {
 	free_disk_emulator();
 }
 
-TEST(TestSyscalls2, open__with_oappend_flag) {
+TEST(TestSyscalls2, syscalls2__open__with_oappend_flag) {
 	// IMPLEMENT THE O_APPEND FLAG AND ADD TEST HERE
 }
 
-TEST(TestSyscalls2, close) {
+TEST(TestSyscalls2, syscalls2__close) {
 	struct file_descriptor_entry *entry;
 	struct file_descriptor_table *table;
 
@@ -377,46 +377,46 @@ TEST(TestSyscalls2, close) {
 	table = get_file_descriptor_table(1897);
 	TEST_ASSERT_EQUAL(4, table->used_descriptors);
 
-	// We close a file in process 2122
-	syscall2__pid = 2122; // Simulate a Process calling close
-	TEST_ASSERT_EQUAL(0, close(3));
+	// We syscalls2__close a file in process 2122
+	syscall2__pid = 2122; // Simulate a Process calling syscalls2__close
+	TEST_ASSERT_EQUAL(0, syscalls2__close(3));
 	table = get_file_descriptor_table(2122);
 	TEST_ASSERT_EQUAL(4, table->used_descriptors);	
 	entry = get_file_descriptor_entry(2122, 3);
 	TEST_ASSERT_NULL(entry);
 
-	// We try to close a descriptor that was already closed
-	syscall2__pid = 2122; // Simulate a Process calling close
-	TEST_ASSERT_EQUAL(-1, close(3));
+	// We try to syscalls2__close a descriptor that was already syscalls2__closed
+	syscall2__pid = 2122; // Simulate a Process calling syscalls2__close
+	TEST_ASSERT_EQUAL(-1, syscalls2__close(3));
 
-	// We close a file in process 1897
-	syscall2__pid = 1897; // Simulate a Process calling close
-	TEST_ASSERT_EQUAL(0, close(3));
+	// We syscalls2__close a file in process 1897
+	syscall2__pid = 1897; // Simulate a Process calling syscalls2__close
+	TEST_ASSERT_EQUAL(0, syscalls2__close(3));
 	table = get_file_descriptor_table(1897);
 	TEST_ASSERT_NULL(table);
 
-	// We close a file in process 2122
-	syscall2__pid = 2122; // Simulate a Process calling close
-	TEST_ASSERT_EQUAL(0, close(4));
+	// We syscalls2__close a file in process 2122
+	syscall2__pid = 2122; // Simulate a Process calling syscalls2__close
+	TEST_ASSERT_EQUAL(0, syscalls2__close(4));
 	table = get_file_descriptor_table(2122);
 	TEST_ASSERT_NULL(table);
 }
 
-TEST(TestSyscalls2, open_close) {
+TEST(TestSyscalls2, syscalls2__open_syscalls2__close) {
 	struct inode *inod1, *inod2, *inod3, *inod4;
 	big_int inode_id_1, inode_id_2, inode_id_3, inode_id_4;
 
 	init_disk_emulator();
 	create_fs();
 
-	syscall2__pid = 2122; // Simulate a Process calling open
+	syscall2__pid = 2122; // Simulate a Process calling syscalls2__open
 
 	inod1 = ialloc(); // We allocate an inode just to have a valid inode number and use it for the purpose of the test	
 	inode_id_1 = inod1->inode_id;
 	syscall2__namei = inode_id_1;
 	free_inode(inod1);
 
-	TEST_ASSERT_EQUAL(3, open("filepath1", O_RDONLY));
+	TEST_ASSERT_EQUAL(3, syscalls2__open("filepath1", O_RDONLY));
 
 
 	inod2 = ialloc(); // We allocate an inode just to have a valid inode number and use it for the purpose of the test
@@ -424,18 +424,18 @@ TEST(TestSyscalls2, open_close) {
 	syscall2__namei = inode_id_2;
 	free_inode(inod2);
 
-	TEST_ASSERT_EQUAL(4, open("filepath2", O_RDONLY));
+	TEST_ASSERT_EQUAL(4, syscalls2__open("filepath2", O_RDONLY));
 
-	//We try to close 3rd fd now
-	TEST_ASSERT_EQUAL(0, close(3));
+	//We try to syscalls2__close 3rd fd now
+	TEST_ASSERT_EQUAL(0, syscalls2__close(3));
 
-	// We try to open a file again and expect 3rd file descriptor to be reused for other file
+	// We try to syscalls2__open a file again and expect 3rd file descriptor to be reused for other file
 	inod3 = ialloc(); // We allocate an inode just to have a valid inode number and use it for the purpose of the test
 	inode_id_3 = inod3->inode_id;
 	syscall2__namei = inode_id_3;
 	free_inode(inod3);
 
-	TEST_ASSERT_EQUAL(3, open("filepath3", O_RDONLY)); //  we assert that that file descriptor is reused but not for the same inode
+	TEST_ASSERT_EQUAL(3, syscalls2__open("filepath3", O_RDONLY)); //  we assert that that file descriptor is reused but not for the same inode
 	TEST_ASSERT_EQUAL(inode_id_3, get_file_descriptor_entry(2122, 3)->inode_number);
 
 	inod4 = ialloc(); // We allocate an inode just to have a valid inode number and use it for the purpose of the test
@@ -443,7 +443,7 @@ TEST(TestSyscalls2, open_close) {
 	syscall2__namei = inode_id_4;
 	free_inode(inod4);
 
-	TEST_ASSERT_EQUAL(5, open("filepath4", O_RDONLY)); // we assert that the file descriptor uses 5 and not 4
+	TEST_ASSERT_EQUAL(5, syscalls2__open("filepath4", O_RDONLY)); // we assert that the file descriptor uses 5 and not 4
 
 	delete_file_descriptor_table(2122);
 	free_disk_emulator();
@@ -674,27 +674,27 @@ TEST(TestSyscalls2, read__error_cases__fd_does_not_exist__or_fde_set_to_write_on
 
 	inod = ialloc();
 
-	syscall2__pid = 2122; // Simulate a Process calling open
+	syscall2__pid = 2122; // Simulate a Process calling syscalls2__open
 	syscall2__namei = inod->inode_id; // "stub" namei by returning this inode id
 
-	fd1 = open("filepath", O_WRONLY);
+	fd1 = syscalls2__open("filepath", O_WRONLY);
 	TEST_ASSERT_EQUAL(3, fd1);
 	
-	TEST_ASSERT_EQUAL(-1, pread(4, buffer, 21, 0)); // test that -1 returned if we provide a file descriptor that doesn't exist
-	TEST_ASSERT_EQUAL(-1, pread(fd1, buffer, 21, 0)); // -1 returned if we try to read a file that is write only
+	TEST_ASSERT_EQUAL(-1, syscalls2__pread(4, buffer, 21, 0)); // test that -1 returned if we provide a file descriptor that doesn't exist
+	TEST_ASSERT_EQUAL(-1, syscalls2__pread(fd1, buffer, 21, 0)); // -1 returned if we try to read a file that is write only
 
-	close(fd1);
+	syscalls2__close(fd1);
 
 	inod->num_blocks = 1;
 	inod->num_used_bytes_in_last_block = 1;
 	put_inode(inod);
 
-	fd2 = open("filepath", O_RDONLY);
+	fd2 = syscalls2__open("filepath", O_RDONLY);
 	TEST_ASSERT_EQUAL(3, fd2);
 
-	TEST_ASSERT_EQUAL(-1, pread(fd2, buffer, 1, 1)); // We try to read after limit of file, it cannot work
+	TEST_ASSERT_EQUAL(-1, syscalls2__pread(fd2, buffer, 1, 1)); // We try to read after limit of file, it cannot work
 	
-	close(fd2);
+	syscalls2__close(fd2);
 
 	free_inode(inod);
 	free_disk_emulator();	
@@ -712,7 +712,7 @@ TEST(TestSyscalls2, read__read_bytes_in_last_block_of_file) {
 
 	inod = ialloc();
 
-	syscall2__pid = 2122; // Simulate a Process calling open
+	syscall2__pid = 2122; // Simulate a Process calling syscalls2__open
 	syscall2__namei = inod->inode_id; // "stub" namei by returning this inode id
 
 	block1 = data_block_alloc();
@@ -729,10 +729,10 @@ TEST(TestSyscalls2, read__read_bytes_in_last_block_of_file) {
 	inod->num_used_bytes_in_last_block = 100; // end of file is at byte offset 100 included in 6th block
 	put_inode(inod);
 
-	fd = open("filepath", O_RDONLY);
+	fd = syscalls2__open("filepath", O_RDONLY);
 
 	memset(buffer, 0, 256);
-	TEST_ASSERT_EQUAL(15, pread(fd, buffer, 15, BLOCK_SIZE * 4 + BLOCK_SIZE - 3)); // We read 15 characters
+	TEST_ASSERT_EQUAL(15, syscalls2__pread(fd, buffer, 15, BLOCK_SIZE * 4 + BLOCK_SIZE - 3)); // We read 15 characters
 
 	TEST_ASSERT_EQUAL('a', buffer[0]);
 	TEST_ASSERT_EQUAL('a', buffer[1]);
@@ -742,7 +742,7 @@ TEST(TestSyscalls2, read__read_bytes_in_last_block_of_file) {
 	}
 	TEST_ASSERT_EQUAL(0, buffer[15]);
 
-	close(fd);
+	syscalls2__close(fd);
 
 	free_data_block_pointer(block1);
 	free_data_block_pointer(block2);
@@ -761,7 +761,7 @@ TEST(TestSyscalls2, read__less_bytes_to_read_than_a_block) {
 
 	inod = ialloc();
 
-	syscall2__pid = 2122; // Simulate a Process calling open
+	syscall2__pid = 2122; // Simulate a Process calling syscalls2__open
 	syscall2__namei = inod->inode_id; // "stub" namei by returning this inode id
 
 	block1 = data_block_alloc();
@@ -783,17 +783,17 @@ TEST(TestSyscalls2, read__less_bytes_to_read_than_a_block) {
 	inod->num_used_bytes_in_last_block = 100; // end of file is at byte offset 100 included in 6th block
 	put_inode(inod);
 
-	fd = open("filepath", O_RDONLY);
+	fd = syscalls2__open("filepath", O_RDONLY);
 
 	memset(buffer, 0, 256);
-	TEST_ASSERT_EQUAL(3, pread(fd, buffer, 3, BLOCK_SIZE * 4 + 1)); // We read 3 characters
+	TEST_ASSERT_EQUAL(3, syscalls2__pread(fd, buffer, 3, BLOCK_SIZE * 4 + 1)); // We read 3 characters
 
 	TEST_ASSERT_EQUAL('b', buffer[0]);
 	TEST_ASSERT_EQUAL('c', buffer[1]);
 	TEST_ASSERT_EQUAL('d', buffer[2]);
 	TEST_ASSERT_EQUAL(0, buffer[3]);
 
-	close(fd);
+	syscalls2__close(fd);
 
 	free_data_block_pointer(block1);
 	free_data_block_pointer(block2);
@@ -813,7 +813,7 @@ TEST(TestSyscalls2, read__more_bytes_to_read_than_a_block) {
 
 	inod = ialloc();
 
-	syscall2__pid = 2122; // Simulate a Process calling open
+	syscall2__pid = 2122; // Simulate a Process calling syscalls2__open
 	syscall2__namei = inod->inode_id; // "stub" namei by returning this inode id
 
 	block1 = data_block_alloc();
@@ -834,10 +834,10 @@ TEST(TestSyscalls2, read__more_bytes_to_read_than_a_block) {
 	inod->num_used_bytes_in_last_block = 67; // end of file is at byte offset 100 included in 6th block
 	put_inode(inod);
 
-	fd = open("filepath", O_RDONLY);
+	fd = syscalls2__open("filepath", O_RDONLY);
 
 	memset(buffer, 0, 8200);
-	TEST_ASSERT_EQUAL(8195, pread(fd, buffer, 8195, BLOCK_SIZE * 4)); // We read 8195 characters
+	TEST_ASSERT_EQUAL(8195, syscalls2__pread(fd, buffer, 8195, BLOCK_SIZE * 4)); // We read 8195 characters
 
 	for (i = 0; i < BLOCK_SIZE; i++) {
 		TEST_ASSERT_EQUAL('a', buffer[i]);
@@ -850,7 +850,7 @@ TEST(TestSyscalls2, read__more_bytes_to_read_than_a_block) {
 	TEST_ASSERT_EQUAL('c', buffer[2 * BLOCK_SIZE + 2]);	
 	TEST_ASSERT_EQUAL(0, buffer[2 * BLOCK_SIZE + 3]);	
 
-	close(fd);
+	syscalls2__close(fd);
 
 	free_data_block_pointer(block1);
 	free_data_block_pointer(block2);
@@ -870,7 +870,7 @@ TEST(TestSyscalls2, read__more_bytes_to_read_than_available_in_file) {
 
 	inod = ialloc();
 
-	syscall2__pid = 2122; // Simulate a Process calling open
+	syscall2__pid = 2122; // Simulate a Process calling syscalls2__open
 	syscall2__namei = inod->inode_id; // "stub" namei by returning this inode id
 
 	block1 = data_block_alloc();
@@ -883,19 +883,19 @@ TEST(TestSyscalls2, read__more_bytes_to_read_than_available_in_file) {
 	inod->num_used_bytes_in_last_block = 15; // end of file is at byte offset 100 included in 6th block
 	put_inode(inod);
 
-	fd = open("filepath", O_RDONLY);
+	fd = syscalls2__open("filepath", O_RDONLY);
 
 	memset(buffer, 0, 256);
-	TEST_ASSERT_EQUAL(0, pread(fd, buffer, 14, BLOCK_SIZE * 4 + 2)); // We read 14 characters
+	TEST_ASSERT_EQUAL(0, syscalls2__pread(fd, buffer, 14, BLOCK_SIZE * 4 + 2)); // We read 14 characters
 
 	for (i = 0; i < 13; i++) {
 		TEST_ASSERT_EQUAL('a', buffer[i]);
 	}
 	TEST_ASSERT_EQUAL(0, buffer[14]);	
 
-	TEST_ASSERT_EQUAL(13, pread(fd, buffer, 13, BLOCK_SIZE * 4 + 2)); // We read 13 characters, the 13th character is the last one
+	TEST_ASSERT_EQUAL(13, syscalls2__pread(fd, buffer, 13, BLOCK_SIZE * 4 + 2)); // We read 13 characters, the 13th character is the last one
 
-	close(fd);
+	syscalls2__close(fd);
 
 	free_data_block_pointer(block1);
 	free_inode(inod);
