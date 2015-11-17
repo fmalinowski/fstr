@@ -2,6 +2,7 @@
 #include "disk_emulator.h"
 #include "data_blocks_handler.h"
 #include "inode_table.h"
+#include "inodes_handler.h"
 
 int create_fs(void) {
     LOGD("Creating FSTR...");
@@ -131,26 +132,26 @@ int create_root_dir(void) {
         return -1;
     }
 
-    struct inode inode = {
-        .inode_id = ROOT_INODE_NUMBER,
-        .type = TYPE_DIRECTORY,
-        .mode = S_IFDIR,
-        .links_nb = 1,
-        .last_modified_file = time(NULL),
-        .last_accessed_file = time(NULL),
-        .last_modified_inode = time(NULL),
-        .num_blocks = 1
-    };
+    struct inode *inode = ialloc();
+    if(inode == NULL) {
+        fprintf(stderr, "could not find a free inode\n");
+        errno = EDQUOT;
+        return -1;
+    }
+
+    inode->type = TYPE_DIRECTORY;
+    inode->mode = S_IFDIR;
 
     // Init the new dir block
     big_int block_id = block->data_block_id;
     struct dir_block dir_block;
-    if(init_dir_block(&dir_block, ROOT_INODE_NUMBER, ROOT_INODE_NUMBER) == -1) {
+    if(init_dir_block(&dir_block, inode->inode_id, ROOT_INODE_NUMBER) == -1) {
         fprintf(stderr, "failed to format a dir block\n");
         return -1;
     }
     write_block(block_id, &dir_block, sizeof(struct dir_block));
-    inode.direct_blocks[0] = block_id;
-    put_inode(&inode);
+    inode->direct_blocks[0] = block_id;
+    inode->num_blocks++;
+    put_inode(inode);
     return 0;
 }
