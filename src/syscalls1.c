@@ -288,7 +288,14 @@ int syscalls1__lstat(const char *path, struct stat *buf) {
 	buf->st_nlink = inode->links_nb;
 	buf->st_uid = inode->uid;
 	buf->st_gid = inode->gid;
-	buf->st_size = inode->num_blocks * BLOCK_SIZE;
+
+	if (inode->type == TYPE_ORDINARY) {
+		buf->st_size = inode->num_blocks == 0 ? 0 : (inode->num_blocks - 1) * BLOCK_SIZE + inode->num_used_bytes_in_last_block;
+	}
+	else {
+		buf->st_size = inode->num_blocks * BLOCK_SIZE;
+	}
+
 	buf->st_blksize = BLOCK_SIZE;
 	buf->st_atime = inode->last_accessed_file;
 	buf->st_mtime = inode->last_modified_inode;

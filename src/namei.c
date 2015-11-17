@@ -19,6 +19,7 @@ static int check_data_block_for_next_entry(struct dir_block *dir_block, char *ne
 
 int namei(const char *path) {
 	LOGD("namei called. path: %s", path);
+	
 	if(path == NULL || path[0] != PATH_DELIMITER[0]){
 		fprintf(stderr, "Invalid path name\n");
 		LOGD("namei invalid path name");
@@ -58,5 +59,6 @@ int namei(const char *path) {
 		return -1;
 	}
 	LOGD("namei inode id: %d", next_inode->inode_id);
+
 	return next_inode->inode_id;
 }
