@@ -818,7 +818,7 @@ TEST(TestSyscalls2, read__error_cases__fd_does_not_exist__or_fde_set_to_write_on
 	fd2 = syscalls2__open("filepath", O_RDONLY);
 	TEST_ASSERT_EQUAL(3, fd2);
 
-	TEST_ASSERT_EQUAL(-1, syscalls2__pread(fd2, buffer, 1, 1)); // We try to read after limit of file, it cannot work
+	TEST_ASSERT_EQUAL(0, syscalls2__pread(fd2, buffer, 1, 1)); // We try to read after limit of file, it cannot work
 	
 	syscalls2__close(fd2);
 
