@@ -4,6 +4,7 @@
 #include "common.h"
 #include "inode_table.h"
 #include "data_blocks_handler.h"
+#include "syscalls1.h"
 
 #ifdef SYSCALL2__TEST
 	static int namei(const char *path) {
@@ -20,7 +21,7 @@
 	// }
 #else
 	#include "namei.h"
-	#include "syscalls1.h"
+	// #include "syscalls1.h"
 #endif
 
 
@@ -179,7 +180,7 @@ int get_size_of_file(big_int num_used_blocks, int num_used_bytes_in_last_block) 
 	return (num_used_blocks - 1) * BLOCK_SIZE + num_used_bytes_in_last_block;
 }
 
-int open(const char *path, int oflag, ...) {
+int syscalls2__open(const char *path, int oflag, ...) {
 	struct file_descriptor_entry * fde;
 	struct inode * inod;
 	int inode_number, pid;
@@ -193,7 +194,7 @@ int open(const char *path, int oflag, ...) {
 		va_end(ap);
 
 		// TODO We should call mknod here (not supported now cause not a priority as mknod exists and fuse doesn't use flag O_CREAT)
-		if (mknod(path, mode, 0) == -1) {
+		if (syscalls1__mknod(path, mode, 0) == -1) {
 			return -1;
 		}
 	}
@@ -247,7 +248,7 @@ int open(const char *path, int oflag, ...) {
 	return fde->fd;
 }
 
-int close(int fildes) {
+int syscalls2__close(int fildes) {
 	struct file_descriptor_entry * fde;
 	struct file_descriptor_table * fdt;
 	int pid;
@@ -527,7 +528,7 @@ big_int convert_byte_offset_to_ith_datablock(off_t offset) {
 	return (offset / BLOCK_SIZE) + 1;
 }
 
-ssize_t pread(int fildes, void *buf, size_t nbyte, off_t offset) {
+ssize_t syscalls2__pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 	struct file_descriptor_entry * fde;
 	struct inode * inod;
 	struct data_block * db;
@@ -621,7 +622,7 @@ ssize_t pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 	return read_bytes;
 }
 
-ssize_t pwrite(int fildes, const void *buf, size_t nbyte, off_t offset) {
+ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offset) {
 	struct file_descriptor_entry * fde;
 	struct inode * inod;
 	struct data_block * db;

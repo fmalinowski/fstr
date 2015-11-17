@@ -7,7 +7,7 @@
 #include "block_utils.h"
 #include "namei.h"
 
-int mkdir(const char *path, mode_t mode) {
+int syscalls1__mkdir(const char *path, mode_t mode) {
 
 	// Check for existing file
 	if(namei(path) != -1) {
@@ -74,7 +74,7 @@ int mkdir(const char *path, mode_t mode) {
 	return 0;
 }
 
-int mknod(const char *path, mode_t mode, dev_t dev) {
+int syscalls1__mknod(const char *path, mode_t mode, dev_t dev) {
 
 	(void) dev;
 	
@@ -125,7 +125,7 @@ int mknod(const char *path, mode_t mode, dev_t dev) {
 	return 0;
 }
 
-int readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset) {
+int syscalls1__readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset) {
 
 	(void) offset;
 
@@ -156,7 +156,7 @@ int readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset
 	return 0;
 }
 
-int unlink(const char *path) {
+int syscalls1__unlink(const char *path) {
 
 	struct inode *inode = get_inode(namei(path));
 	if(inode == NULL) {
@@ -203,7 +203,7 @@ int unlink(const char *path) {
 	return put_inode(parent_inode);
 }
 
-int rmdir(const char *path) {
+int syscalls1__rmdir(const char *path) {
 
 	struct inode *inode = get_inode(namei(path));
 	if(inode == NULL) {
@@ -273,4 +273,24 @@ int rmdir(const char *path) {
 		return -1;
 	}
 	return put_inode(parent_inode);
+}
+
+
+int syscalls1__lstat(const char *path, struct stat *buf) {
+	struct inode *inode = get_inode(namei(path));
+	if(inode == NULL) {
+		fprintf(stderr, "failed to get inode\n");
+		errno = ENOENT;
+		return -1;
+	}
+	buf->st_ino = inode->inode_id;
+	buf->st_mode = inode->mode;
+	buf->st_nlink = inode->links_nb;
+	buf->st_uid = inode->uid;
+	buf->st_gid = inode->gid;
+	buf->st_size = inode->num_blocks * BLOCK_SIZE;
+	buf->st_blksize = BLOCK_SIZE;
+	buf->st_atime = inode->last_accessed_file;
+	buf->st_mtime = inode->last_modified_inode;
+	return 0;
 }
