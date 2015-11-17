@@ -13,6 +13,13 @@
 #include <math.h>
 #include <inttypes.h>
 #include <libgen.h>
+// disk access headers
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#define DISK_STORE_PATH "FSTR_DEV"
+
 
 // #define DEBUG
 #ifdef DEBUG
@@ -20,6 +27,8 @@
 #else
 #define LOGD(A, ...)
 #endif
+
+
 
 #define FREE_BLOCKS_CACHE_SIZE 0
 #define FREE_INODES_CACHE_SIZE 0
