@@ -28,6 +28,7 @@ TEST_GROUP_RUNNER(TestSyscalls2) {
 	RUN_TEST_CASE(TestSyscalls2, convert_byte_offset_to_ith_datablock);
 	RUN_TEST_CASE(TestSyscalls2, is_ith_block_in_range_of_direct_and_indirect_blocks);
 	RUN_TEST_CASE(TestSyscalls2, get_ith_datablock_number);
+	RUN_TEST_CASE(TestSyscalls2, set_ith_datablock_number);
 	RUN_TEST_CASE(TestSyscalls2, read__error_cases__fd_does_not_exist__or_fde_set_to_write_only__or_offset_too_big);
 	RUN_TEST_CASE(TestSyscalls2, read__read_bytes_in_last_block_of_file);
 	RUN_TEST_CASE(TestSyscalls2, read__less_bytes_to_read_than_a_block);
@@ -488,7 +489,10 @@ TEST(TestSyscalls2, get_ith_datablock_number) {
 
 	struct inode inod;
 
-	// Test of direct blocks
+	/* *******
+		TEST OF DIRECT BLOCKS
+	******* */
+
 	for (i = 1; i <= NUM_DIRECT_BLOCKS; i++) {
 		db = data_block_alloc();
 		inod.direct_blocks[i-1] = db->data_block_id;
@@ -499,7 +503,10 @@ TEST(TestSyscalls2, get_ith_datablock_number) {
 		free_data_block_pointer(db);
 	}
 
-	// Test of indirect blocks
+	/* *******
+		TEST OF SINGLE INDIRECT BLOCKS
+	******* */
+
 	single_indirect_db = data_block_alloc();
 	single_indirect_block_id= single_indirect_db->data_block_id;
 	inod.single_indirect_block = single_indirect_block_id;
@@ -661,6 +668,123 @@ TEST(TestSyscalls2, get_ith_datablock_number) {
 
 	free_data_block_pointer(triple_indirect_level1_db);
 
+	free_disk_emulator();
+}
+
+TEST(TestSyscalls2, set_ith_datablock_number) {
+	big_int i;
+	int inode_number;
+
+	init_disk_emulator();
+	create_fs();
+
+	struct inode * inod = ialloc();
+	inode_number = inod->inode_id;
+
+	/* *******
+		TEST OF DIRECT BLOCKS
+	******* */
+
+	for (i = 1; i <= NUM_DIRECT_BLOCKS; i++) {
+		TEST_ASSERT_EQUAL(0, get_ith_datablock_number(inod, i));
+		set_ith_datablock_number(inod, i, i);
+
+		free_inode(inod);
+		inod = get_inode(inode_number);
+		TEST_ASSERT_EQUAL(i, inod->direct_blocks[i-1]);
+		TEST_ASSERT_EQUAL(i, get_ith_datablock_number(inod, i));
+	}
+
+
+	/* *******
+		TEST OF SINGLE INDIRECT BLOCKS
+	******* */
+
+	TEST_ASSERT_EQUAL(0, inod->single_indirect_block);
+	
+	// Test first block number in indirect block is obtained correctly
+	TEST_ASSERT_EQUAL(0, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + 1));
+	set_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + 1, 433);
+	
+	free_inode(inod);
+	inod = get_inode(inode_number);
+	TEST_ASSERT_EQUAL(433, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + 1));
+	TEST_ASSERT(inod->single_indirect_block != 0);
+
+	// Test last block number in indirect block is obtained correctly
+	TEST_ASSERT_EQUAL(0, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH));
+	set_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH, 1734);
+	
+	free_inode(inod);
+	inod = get_inode(inode_number);
+	TEST_ASSERT_EQUAL(1734, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH));
+	
+
+	/* *******
+		TEST OF DOUBLE INDIRECT BLOCKS
+	******* */
+
+	TEST_ASSERT_EQUAL(0, inod->double_indirect_block);
+
+	// Set first datablock in level 2 of double indirect list
+	TEST_ASSERT_EQUAL(0, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + 1));
+	set_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + 1, 67);
+
+	free_inode(inod);
+	inod = get_inode(inode_number);
+	TEST_ASSERT_EQUAL(67, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + 1));
+	TEST_ASSERT(inod->double_indirect_block != 0);
+
+	// Set first datablock in level 2 of the second datablock in level1 of double indirect list
+	TEST_ASSERT_EQUAL(0, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH + 1));
+	set_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH + 1, 10675);
+
+	free_inode(inod);
+	inod = get_inode(inode_number);
+	TEST_ASSERT_EQUAL(10675, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH + 1));
+
+	// Set last datablock in level 2 of the last datablock in level1 of double indirect list
+	TEST_ASSERT_EQUAL(0, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH));
+	set_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH, 876);
+
+	free_inode(inod);
+	inod = get_inode(inode_number);
+	TEST_ASSERT_EQUAL(876, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH));
+
+
+
+	/* *******
+		TEST OF TRIPLE INDIRECT BLOCKS
+	******* */
+
+	TEST_ASSERT_EQUAL(0, inod->triple_indirect_block);
+
+	// Set first datablock in level 3 of the first datablock in level 2 of the first datablock in level 1 of triple indirect list
+	TEST_ASSERT_EQUAL(0, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + 1));
+	set_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + 1, 123);
+
+	free_inode(inod);
+	inod = get_inode(inode_number);
+	TEST_ASSERT_EQUAL(123, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + 1));
+	TEST_ASSERT(inod->triple_indirect_block != 0);
+
+	// Set first datablock in level 3 of the first datablock in level 2 of the second datablock in level 1 of triple indirect list
+	TEST_ASSERT_EQUAL(0, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + 2 * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + 1));
+	set_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + 2 * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + 1, 989);
+
+	free_inode(inod);
+	inod = get_inode(inode_number);
+	TEST_ASSERT_EQUAL(989, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + 2 * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + 1));
+
+	// Set last datablock in level 3 of the last datablock in level 2 of the last datablock in level 1 of triple indirect list
+	TEST_ASSERT_EQUAL(0, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH));
+	set_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH, 48973);
+
+	free_inode(inod);
+	inod = get_inode(inode_number);
+	TEST_ASSERT_EQUAL(48973, get_ith_datablock_number(inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH));
+
+	free_inode(inod);
 	free_disk_emulator();
 }
 
