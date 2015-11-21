@@ -80,9 +80,8 @@ int syscalls1__mkdir(const char *path, mode_t mode) {
 		fprintf(stderr, "Failed to add entry to parent dir block\n");
 		return -1;
 	}
-	put_inode(parent_inode);
 
-	return 0;
+	return put_inode(parent_inode);;
 }
 
 int syscalls1__mknod(const char *path, mode_t mode, dev_t dev) {
@@ -134,10 +133,8 @@ int syscalls1__mknod(const char *path, mode_t mode, dev_t dev) {
 		fprintf(stderr, "failed to add entry to parent inode\n");
 		return -1;
 	}
-	// Persist parent inode
-	put_inode(parent_inode);
 
-	return 0;
+	return put_inode(parent_inode);;
 }
 
 int syscalls1__readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t offset) {
