@@ -80,6 +80,7 @@ int syscalls1__mkdir(const char *path, mode_t mode) {
 		fprintf(stderr, "Failed to add entry to parent dir block\n");
 		return -1;
 	}
+	put_inode(parent_inode);
 
 	return 0;
 }
@@ -339,7 +340,7 @@ int syscalls1__utimens(const char *path, const struct timespec tv[2]) {
 		inode->last_accessed_file += tv[0].tv_sec;
 		inode->last_modified_file += tv[1].tv_sec;
 	}
-	return 0;
+	return put_inode(inode);
 }
 
 int syscalls1__chmod(const char *path, mode_t mode) {
@@ -352,7 +353,7 @@ int syscalls1__chmod(const char *path, mode_t mode) {
 	}
 	
 	inode->mode = mode;
-	return 0;
+	return put_inode(inode);
 }
 
 int syscalls1__chown(const char *path, uid_t uid, gid_t gid) {
@@ -366,5 +367,5 @@ int syscalls1__chown(const char *path, uid_t uid, gid_t gid) {
 
 	inode->uid = uid;
 	inode->gid = gid;
-	return 0;
+	return put_inode(inode);
 }
