@@ -131,11 +131,14 @@ int ifree(struct inode * inod){
 	superblock.num_free_inodes++;
 	superblock.commit();
 
-	inod->type = TYPE_FREE;
+	struct inode fresh_inode = {
+        .inode_id = inod->inode_id,
+        .type = TYPE_FREE
+    };
 
-	blok3 = bread(ILIST_BEGIN + ((inod->inode_id - 1) / (BLOCK_SIZE / INODE_SIZE)));
-	inode_offset_in_block = ((inod->inode_id - 1) % (BLOCK_SIZE / INODE_SIZE)) * INODE_SIZE;
-	memcpy(&(blok3->block[inode_offset_in_block]), inod, sizeof(struct inode));
+	blok3 = bread(ILIST_BEGIN + ((fresh_inode.inode_id - 1) / (BLOCK_SIZE / INODE_SIZE)));
+	inode_offset_in_block = ((fresh_inode.inode_id - 1) % (BLOCK_SIZE / INODE_SIZE)) * INODE_SIZE;
+	memcpy(&(blok3->block[inode_offset_in_block]), &fresh_inode, sizeof(struct inode));
 	
 	if(bwrite(blok3) == 0){
 		if(commit_superblock() == 0){
