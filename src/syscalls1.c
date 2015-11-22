@@ -34,8 +34,8 @@ int syscalls1__mkdir(const char *path, mode_t mode) {
 	}
 
 	// Prepare a new data block for creating empty dir block
-	struct data_block *block = data_block_alloc();
-	if(block == NULL) {
+	struct data_block block;
+	if(data_block_alloc(&block) == -1) {
 		fprintf(stderr, "could not find a free data block\n");
 		errno = EDQUOT;
 		return -1;
@@ -55,7 +55,7 @@ int syscalls1__mkdir(const char *path, mode_t mode) {
 	inode.last_modified_inode = time(NULL);
 
 	// Init the new dir block
-	big_int block_id = block->data_block_id;
+	big_int block_id = block.data_block_id;
 	struct dir_block dir_block;
 	if(init_dir_block(&dir_block, inode.inode_id, parent_inode.inode_id) == -1) {
 		fprintf(stderr, "failed to format a dir block\n");

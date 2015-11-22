@@ -2,7 +2,6 @@
 #include "unity_fixture.h"
 
 #include "common.h"
-#include "data_blocks_handler.h"
 #include "disk_emulator.h"
 #include "mkfs.h"
 #include "syscalls1.h"

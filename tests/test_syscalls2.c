@@ -464,13 +464,13 @@ TEST(TestSyscalls2, is_ith_block_in_range_of_direct_and_indirect_blocks) {
 }
 
 TEST(TestSyscalls2, get_ith_datablock_number) {
-	struct data_block *db, *single_indirect_db; 
-	struct data_block *double_indirect_level1_db; 
-	struct data_block *double_indirect_level2_first_first_db, *double_indirect_level2_second_first_db, *double_indirect_level2_last_last_db;
-	struct data_block *triple_indirect_level1_db;
-	struct data_block *triple_indirect_level2_first_first_db, *triple_indirect_level3_first_db;
-	struct data_block *triple_indirect_level2_second_first_db;
-	struct data_block *triple_indirect_level2_last_last_db, *triple_indirect_level3_last_db;
+	struct data_block db, single_indirect_db; 
+	struct data_block double_indirect_level1_db; 
+	struct data_block double_indirect_level2_first_first_db, double_indirect_level2_second_first_db, double_indirect_level2_last_last_db;
+	struct data_block triple_indirect_level1_db;
+	struct data_block triple_indirect_level2_first_first_db, triple_indirect_level3_first_db;
+	struct data_block triple_indirect_level2_second_first_db;
+	struct data_block triple_indirect_level2_last_last_db, triple_indirect_level3_last_db;
 	big_int i, single_indirect_block_id;
 
 	init_disk_emulator();
@@ -483,38 +483,33 @@ TEST(TestSyscalls2, get_ith_datablock_number) {
 	******* */
 
 	for (i = 1; i <= NUM_DIRECT_BLOCKS; i++) {
-		db = data_block_alloc();
-		inod.direct_blocks[i-1] = db->data_block_id;
+		data_block_alloc(&db);
+		inod.direct_blocks[i-1] = db.data_block_id;
 		// printf("i: %llu, block id: %llu, stored in inode: %llu\n", i, db->data_block_id, inod.direct_blocks[i-1]);
 		TEST_ASSERT(inod.direct_blocks[i-1] != 0);
 
 		TEST_ASSERT_EQUAL(inod.direct_blocks[i-1], get_ith_datablock_number(&inod, i));
-		free_data_block_pointer(db);
 	}
 
 	/* *******
 		TEST OF SINGLE INDIRECT BLOCKS
 	******* */
 
-	single_indirect_db = data_block_alloc();
-	single_indirect_block_id= single_indirect_db->data_block_id;
+	data_block_alloc(&single_indirect_db);
+	single_indirect_block_id= single_indirect_db.data_block_id;
 	inod.single_indirect_block = single_indirect_block_id;
 	
 	// Test first block number in indirect block is obtained correctly
-	db = data_block_alloc();
-	memcpy(single_indirect_db->block, &db->data_block_id, sizeof(big_int));
-	bwrite(single_indirect_db); // Let's save the block containing block numbers on disk
-	TEST_ASSERT_EQUAL(db->data_block_id, get_ith_datablock_number(&inod, NUM_DIRECT_BLOCKS + 1));
-	free_data_block_pointer(db);
+	data_block_alloc(&db);
+	memcpy(single_indirect_db.block, &db.data_block_id, sizeof(big_int));
+	bwrite(&single_indirect_db); // Let's save the block containing block numbers on disk
+	TEST_ASSERT_EQUAL(db.data_block_id, get_ith_datablock_number(&inod, NUM_DIRECT_BLOCKS + 1));
 
 	// Test last block number in indirect block is obtained correctly
-	db = data_block_alloc();
-	memcpy(&single_indirect_db->block[(BLOCK_ID_LIST_LENGTH-1) * sizeof(big_int)], &db->data_block_id, sizeof(big_int));
-	bwrite(single_indirect_db); // Let's save the block containing block numbers on disk
-	TEST_ASSERT_EQUAL(db->data_block_id, get_ith_datablock_number(&inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH));
-	free_data_block_pointer(db);
-
-	free_data_block_pointer(single_indirect_db);
+	data_block_alloc(&db);
+	memcpy(&single_indirect_db.block[(BLOCK_ID_LIST_LENGTH-1) * sizeof(big_int)], &db.data_block_id, sizeof(big_int));
+	bwrite(&single_indirect_db); // Let's save the block containing block numbers on disk
+	TEST_ASSERT_EQUAL(db.data_block_id, get_ith_datablock_number(&inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH));
 
 	
 
@@ -522,57 +517,43 @@ TEST(TestSyscalls2, get_ith_datablock_number) {
 		TEST OF DOUBLE INDIRECT BLOCKS
 	******* */
 
-	double_indirect_level1_db = data_block_alloc();
-	inod.double_indirect_block = double_indirect_level1_db->data_block_id;
+	data_block_alloc(&double_indirect_level1_db);
+	inod.double_indirect_block = double_indirect_level1_db.data_block_id;
 
 
 	// Set first datablock in level 2 of double indirect list
-	double_indirect_level2_first_first_db = data_block_alloc();
-	memcpy(double_indirect_level1_db->block, &double_indirect_level2_first_first_db->data_block_id, sizeof(big_int));
-	bwrite(double_indirect_level1_db);
+	data_block_alloc(&double_indirect_level2_first_first_db);
+	memcpy(double_indirect_level1_db.block, &double_indirect_level2_first_first_db.data_block_id, sizeof(big_int));
+	bwrite(&double_indirect_level1_db);
 
-	db = data_block_alloc();
-	memcpy(double_indirect_level2_first_first_db->block, &db->data_block_id, sizeof(big_int));
-	bwrite(double_indirect_level2_first_first_db);
-	TEST_ASSERT_EQUAL(db->data_block_id, get_ith_datablock_number(&inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + 1));
-	free_data_block_pointer(db);
-
-	free_data_block_pointer(double_indirect_level2_first_first_db);
+	data_block_alloc(&db);
+	memcpy(double_indirect_level2_first_first_db.block, &db.data_block_id, sizeof(big_int));
+	bwrite(&double_indirect_level2_first_first_db);
+	TEST_ASSERT_EQUAL(db.data_block_id, get_ith_datablock_number(&inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + 1));
 
 
 
 	// Set first datablock in level 2 of the second datablock in level1 of double indirect list
-	double_indirect_level2_second_first_db = data_block_alloc();
-	memcpy(&double_indirect_level1_db->block[sizeof(big_int)], &double_indirect_level2_second_first_db->data_block_id, sizeof(big_int));
-	bwrite(double_indirect_level1_db);
+	data_block_alloc(&double_indirect_level2_second_first_db);
+	memcpy(&double_indirect_level1_db.block[sizeof(big_int)], &double_indirect_level2_second_first_db.data_block_id, sizeof(big_int));
+	bwrite(&double_indirect_level1_db);
 
-	db = data_block_alloc();
-	memcpy(double_indirect_level2_second_first_db->block, &db->data_block_id, sizeof(big_int));
-	bwrite(double_indirect_level2_second_first_db);
-	TEST_ASSERT_EQUAL(db->data_block_id, get_ith_datablock_number(&inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH + 1));
-	free_data_block_pointer(db);
-
-	free_data_block_pointer(double_indirect_level2_second_first_db);
+	data_block_alloc(&db);
+	memcpy(double_indirect_level2_second_first_db.block, &db.data_block_id, sizeof(big_int));
+	bwrite(&double_indirect_level2_second_first_db);
+	TEST_ASSERT_EQUAL(db.data_block_id, get_ith_datablock_number(&inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH + 1));
 
 
 
 	// Set last datablock in level 2 of the last datablock in level1 of double indirect list
-	double_indirect_level2_last_last_db = data_block_alloc();
-	memcpy(&double_indirect_level1_db->block[(BLOCK_ID_LIST_LENGTH-1) * sizeof(big_int)], &double_indirect_level2_last_last_db->data_block_id, sizeof(big_int));
-	bwrite(double_indirect_level1_db);
+	data_block_alloc(&double_indirect_level2_last_last_db);
+	memcpy(&double_indirect_level1_db.block[(BLOCK_ID_LIST_LENGTH-1) * sizeof(big_int)], &double_indirect_level2_last_last_db.data_block_id, sizeof(big_int));
+	bwrite(&double_indirect_level1_db);
 
-	db = data_block_alloc();
-	memcpy(&double_indirect_level2_last_last_db->block[(BLOCK_ID_LIST_LENGTH-1) * sizeof(big_int)], &db->data_block_id, sizeof(big_int));
-	bwrite(double_indirect_level2_last_last_db);
-	TEST_ASSERT_EQUAL(db->data_block_id, get_ith_datablock_number(&inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH));
-	free_data_block_pointer(db);
-
-	free_data_block_pointer(double_indirect_level2_last_last_db);
-
-
-
-	free_data_block_pointer(double_indirect_level1_db);
-
+	data_block_alloc(&db);
+	memcpy(&double_indirect_level2_last_last_db.block[(BLOCK_ID_LIST_LENGTH-1) * sizeof(big_int)], &db.data_block_id, sizeof(big_int));
+	bwrite(&double_indirect_level2_last_last_db);
+	TEST_ASSERT_EQUAL(db.data_block_id, get_ith_datablock_number(&inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH));
 
 
 
@@ -583,79 +564,59 @@ TEST(TestSyscalls2, get_ith_datablock_number) {
 		TEST OF TRIPLE INDIRECT BLOCKS
 	******* */
 
-	triple_indirect_level1_db = data_block_alloc();
-	inod.triple_indirect_block = triple_indirect_level1_db->data_block_id;
+	data_block_alloc(&triple_indirect_level1_db);
+	inod.triple_indirect_block = triple_indirect_level1_db.data_block_id;
 
 
 
 	// Set first datablock in level 3 of the first datablock in level 2 of the first datablock in level 1 of triple indirect list
-	triple_indirect_level2_first_first_db = data_block_alloc();
-	memcpy(triple_indirect_level1_db->block, &triple_indirect_level2_first_first_db->data_block_id, sizeof(big_int));
-	bwrite(triple_indirect_level1_db);
+	data_block_alloc(&triple_indirect_level2_first_first_db);
+	memcpy(triple_indirect_level1_db.block, &triple_indirect_level2_first_first_db.data_block_id, sizeof(big_int));
+	bwrite(&triple_indirect_level1_db);
 
-	triple_indirect_level3_first_db = data_block_alloc();
-	memcpy(triple_indirect_level2_first_first_db->block, &triple_indirect_level3_first_db->data_block_id, sizeof(big_int));
-	bwrite(triple_indirect_level2_first_first_db);
-
-
-	db = data_block_alloc();
-	memcpy(triple_indirect_level3_first_db->block, &db->data_block_id, sizeof(big_int));
-	bwrite(triple_indirect_level3_first_db);
-	TEST_ASSERT_EQUAL(db->data_block_id, get_ith_datablock_number(&inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + 1));
-	free_data_block_pointer(db);
+	data_block_alloc(&triple_indirect_level3_first_db);
+	memcpy(triple_indirect_level2_first_first_db.block, &triple_indirect_level3_first_db.data_block_id, sizeof(big_int));
+	bwrite(&triple_indirect_level2_first_first_db);
 
 
-	free_data_block_pointer(triple_indirect_level3_first_db);
-	free_data_block_pointer(triple_indirect_level2_first_first_db);
-
+	data_block_alloc(&db);
+	memcpy(triple_indirect_level3_first_db.block, &db.data_block_id, sizeof(big_int));
+	bwrite(&triple_indirect_level3_first_db);
+	TEST_ASSERT_EQUAL(db.data_block_id, get_ith_datablock_number(&inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + 1));
 
 
 
 	// Set first datablock in level 3 of the first datablock in level 2 of the second datablock in level 1 of triple indirect list
-	triple_indirect_level2_second_first_db = data_block_alloc();
-	memcpy(&triple_indirect_level1_db->block[sizeof(big_int)], &triple_indirect_level2_second_first_db->data_block_id, sizeof(big_int));
-	bwrite(triple_indirect_level1_db);
+	data_block_alloc(&triple_indirect_level2_second_first_db);
+	memcpy(&triple_indirect_level1_db.block[sizeof(big_int)], &triple_indirect_level2_second_first_db.data_block_id, sizeof(big_int));
+	bwrite(&triple_indirect_level1_db);
 
-	triple_indirect_level3_first_db = data_block_alloc();
-	memcpy(triple_indirect_level2_second_first_db->block, &triple_indirect_level3_first_db->data_block_id, sizeof(big_int));
-	bwrite(triple_indirect_level2_second_first_db);
-
-
-	db = data_block_alloc();
-	memcpy(triple_indirect_level3_first_db->block, &db->data_block_id, sizeof(big_int));
-	bwrite(triple_indirect_level3_first_db);
-	TEST_ASSERT_EQUAL(db->data_block_id, get_ith_datablock_number(&inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + 2 * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + 1));
-	free_data_block_pointer(db);
+	data_block_alloc(&triple_indirect_level3_first_db);
+	memcpy(triple_indirect_level2_second_first_db.block, &triple_indirect_level3_first_db.data_block_id, sizeof(big_int));
+	bwrite(&triple_indirect_level2_second_first_db);
 
 
-	free_data_block_pointer(triple_indirect_level3_first_db);
-	free_data_block_pointer(triple_indirect_level2_second_first_db);
-
+	data_block_alloc(&db);
+	memcpy(triple_indirect_level3_first_db.block, &db.data_block_id, sizeof(big_int));
+	bwrite(&triple_indirect_level3_first_db);
+	TEST_ASSERT_EQUAL(db.data_block_id, get_ith_datablock_number(&inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + 2 * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + 1));
 
 
 
 	// Set last datablock in level 3 of the last datablock in level 2 of the last datablock in level 1 of triple indirect list
-	triple_indirect_level2_last_last_db = data_block_alloc();
-	memcpy(&triple_indirect_level1_db->block[(BLOCK_ID_LIST_LENGTH-1) * sizeof(big_int)], &triple_indirect_level2_last_last_db->data_block_id, sizeof(big_int));
-	bwrite(triple_indirect_level1_db);
+	data_block_alloc(&triple_indirect_level2_last_last_db);
+	memcpy(&triple_indirect_level1_db.block[(BLOCK_ID_LIST_LENGTH-1) * sizeof(big_int)], &triple_indirect_level2_last_last_db.data_block_id, sizeof(big_int));
+	bwrite(&triple_indirect_level1_db);
 
-	triple_indirect_level3_last_db = data_block_alloc();
-	memcpy(&triple_indirect_level2_last_last_db->block[(BLOCK_ID_LIST_LENGTH-1) * sizeof(big_int)], &triple_indirect_level3_last_db->data_block_id, sizeof(big_int));
-	bwrite(triple_indirect_level2_last_last_db);
-
-
-	db = data_block_alloc();
-	memcpy(&triple_indirect_level3_last_db->block[(BLOCK_ID_LIST_LENGTH-1) * sizeof(big_int)], &db->data_block_id, sizeof(big_int));
-	bwrite(triple_indirect_level3_last_db);
-	TEST_ASSERT_EQUAL(db->data_block_id, get_ith_datablock_number(&inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH));
-	free_data_block_pointer(db);
+	data_block_alloc(&triple_indirect_level3_last_db);
+	memcpy(&triple_indirect_level2_last_last_db.block[(BLOCK_ID_LIST_LENGTH-1) * sizeof(big_int)], &triple_indirect_level3_last_db.data_block_id, sizeof(big_int));
+	bwrite(&triple_indirect_level2_last_last_db);
 
 
-	free_data_block_pointer(triple_indirect_level3_last_db);
-	free_data_block_pointer(triple_indirect_level2_last_last_db);
-
-
-	free_data_block_pointer(triple_indirect_level1_db);
+	data_block_alloc(&db);
+	memcpy(&triple_indirect_level3_last_db.block[(BLOCK_ID_LIST_LENGTH-1) * sizeof(big_int)], &db.data_block_id, sizeof(big_int));
+	bwrite(&triple_indirect_level3_last_db);
+	TEST_ASSERT_EQUAL(db.data_block_id, get_ith_datablock_number(&inod, NUM_DIRECT_BLOCKS + BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH + BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH));
 
 	free_disk_emulator();
 }
@@ -804,7 +765,7 @@ TEST(TestSyscalls2, read__error_cases__fd_does_not_exist__or_fde_set_to_write_on
 }
 
 TEST(TestSyscalls2, read__read_bytes_in_last_block_of_file) {
-	struct data_block *block1, *block2;
+	struct data_block block1, block2;
 	struct inode inod;
 	char buffer[256];
 	int fd;
@@ -818,16 +779,16 @@ TEST(TestSyscalls2, read__read_bytes_in_last_block_of_file) {
 	syscall2__pid = 2122; // Simulate a Process calling syscalls2__open
 	syscall2__namei = inod.inode_id; // "stub" namei by returning this inode id
 
-	block1 = data_block_alloc();
-	block2 = data_block_alloc();
+	data_block_alloc(&block1);
+	data_block_alloc(&block2);
 
-	memset(block1->block, 'a', BLOCK_SIZE); // Write a full block of a
-	memset(block2->block, 'b', 100); // Write 100 b in the block.
-	bwrite(block1);
-	bwrite(block2);
+	memset(block1.block, 'a', BLOCK_SIZE); // Write a full block of a
+	memset(block2.block, 'b', 100); // Write 100 b in the block.
+	bwrite(&block1);
+	bwrite(&block2);
 
-	inod.direct_blocks[4] = block1->data_block_id;
-	inod.direct_blocks[5] = block2->data_block_id;
+	inod.direct_blocks[4] = block1.data_block_id;
+	inod.direct_blocks[5] = block2.data_block_id;
 	inod.num_blocks = 6; // 6 blocks are used in this file
 	inod.num_used_bytes_in_last_block = 100; // end of file is at byte offset 100 included in 6th block
 	put_inode(&inod);
@@ -847,13 +808,11 @@ TEST(TestSyscalls2, read__read_bytes_in_last_block_of_file) {
 
 	syscalls2__close(fd);
 
-	free_data_block_pointer(block1);
-	free_data_block_pointer(block2);
 	free_disk_emulator();
 }
 
 TEST(TestSyscalls2, read__less_bytes_to_read_than_a_block) {
-	struct data_block *block1, *block2;
+	struct data_block block1, block2;
 	struct inode inod;
 	char buffer[256];
 	int fd;
@@ -866,21 +825,21 @@ TEST(TestSyscalls2, read__less_bytes_to_read_than_a_block) {
 	syscall2__pid = 2122; // Simulate a Process calling syscalls2__open
 	syscall2__namei = inod.inode_id; // "stub" namei by returning this inode id
 
-	block1 = data_block_alloc();
-	block2 = data_block_alloc();
+	data_block_alloc(&block1);
+	data_block_alloc(&block2);
 
-	block1->block[0] = 'a';
-	block1->block[1] = 'b';
-	block1->block[2] = 'c';
-	block1->block[3] = 'd';
-	block1->block[4] = 'e';
-	memset(&block1->block[5], 'a', BLOCK_SIZE-5); // Write a full block of a
-	memset(block2->block, 'b', 100); // Write 100 b in the block.
-	bwrite(block1);
-	bwrite(block2);
+	block1.block[0] = 'a';
+	block1.block[1] = 'b';
+	block1.block[2] = 'c';
+	block1.block[3] = 'd';
+	block1.block[4] = 'e';
+	memset(&block1.block[5], 'a', BLOCK_SIZE-5); // Write a full block of a
+	memset(block2.block, 'b', 100); // Write 100 b in the block.
+	bwrite(&block1);
+	bwrite(&block2);
 
-	inod.direct_blocks[4] = block1->data_block_id;
-	inod.direct_blocks[5] = block2->data_block_id;
+	inod.direct_blocks[4] = block1.data_block_id;
+	inod.direct_blocks[5] = block2.data_block_id;
 	inod.num_blocks = 6; // 6 blocks are used in this file
 	inod.num_used_bytes_in_last_block = 100; // end of file is at byte offset 100 included in 6th block
 	put_inode(&inod);
@@ -897,13 +856,11 @@ TEST(TestSyscalls2, read__less_bytes_to_read_than_a_block) {
 
 	syscalls2__close(fd);
 
-	free_data_block_pointer(block1);
-	free_data_block_pointer(block2);
 	free_disk_emulator();
 }
 
 TEST(TestSyscalls2, read__more_bytes_to_read_than_a_block) {
-	struct data_block *block1, *block2, *block3;
+	struct data_block block1, block2, block3;
 	struct inode inod;
 	char buffer[8200];
 	int fd;
@@ -917,20 +874,20 @@ TEST(TestSyscalls2, read__more_bytes_to_read_than_a_block) {
 	syscall2__pid = 2122; // Simulate a Process calling syscalls2__open
 	syscall2__namei = inod.inode_id; // "stub" namei by returning this inode id
 
-	block1 = data_block_alloc();
-	block2 = data_block_alloc();
-	block3 = data_block_alloc();
+	data_block_alloc(&block1);
+	data_block_alloc(&block2);
+	data_block_alloc(&block3);
 
-	memset(block1->block, 'a', BLOCK_SIZE); // Write a full block of a
-	memset(block2->block, 'b', BLOCK_SIZE); // Write 100 b in the block.
-	memset(block3->block, 'c', BLOCK_SIZE); // Write 100 b in the block.
-	bwrite(block1);
-	bwrite(block2);
-	bwrite(block3);
+	memset(block1.block, 'a', BLOCK_SIZE); // Write a full block of a
+	memset(block2.block, 'b', BLOCK_SIZE); // Write 100 b in the block.
+	memset(block3.block, 'c', BLOCK_SIZE); // Write 100 b in the block.
+	bwrite(&block1);
+	bwrite(&block2);
+	bwrite(&block3);
 
-	inod.direct_blocks[4] = block1->data_block_id;
-	inod.direct_blocks[5] = block2->data_block_id;
-	inod.direct_blocks[6] = block3->data_block_id;
+	inod.direct_blocks[4] = block1.data_block_id;
+	inod.direct_blocks[5] = block2.data_block_id;
+	inod.direct_blocks[6] = block3.data_block_id;
 	inod.num_blocks = 10; // 10 blocks are used in this file
 	inod.num_used_bytes_in_last_block = 67; // end of file is at byte offset 100 included in 6th block
 	put_inode(&inod);
@@ -953,13 +910,11 @@ TEST(TestSyscalls2, read__more_bytes_to_read_than_a_block) {
 
 	syscalls2__close(fd);
 
-	free_data_block_pointer(block1);
-	free_data_block_pointer(block2);
 	free_disk_emulator();
 }
 
 TEST(TestSyscalls2, read__more_bytes_to_read_than_available_in_file) {
-	struct data_block *block1;
+	struct data_block block1;
 	struct inode inod;
 	char buffer[256];
 	int fd;
@@ -973,12 +928,12 @@ TEST(TestSyscalls2, read__more_bytes_to_read_than_available_in_file) {
 	syscall2__pid = 2122; // Simulate a Process calling syscalls2__open
 	syscall2__namei = inod.inode_id; // "stub" namei by returning this inode id
 
-	block1 = data_block_alloc();
+	data_block_alloc(&block1);
 
-	memset(block1->block, 'a', 15);
-	bwrite(block1);
+	memset(block1.block, 'a', 15);
+	bwrite(&block1);
 
-	inod.direct_blocks[4] = block1->data_block_id;
+	inod.direct_blocks[4] = block1.data_block_id;
 	inod.num_blocks = 5; // 5 blocks are used in this file
 	inod.num_used_bytes_in_last_block = 15; // end of file is at byte offset 15 included in 6th block
 	put_inode(&inod);
@@ -997,12 +952,11 @@ TEST(TestSyscalls2, read__more_bytes_to_read_than_available_in_file) {
 
 	syscalls2__close(fd);
 
-	free_data_block_pointer(block1);
 	free_disk_emulator();
 }
 
 TEST(TestSyscalls2, pwrite__write_after_end_of_file) {
-	struct data_block *block1;
+	struct data_block block1;
 	struct inode inod;
 	char buffer[256];
 	char buffer2[7 * BLOCK_SIZE];
@@ -1016,12 +970,12 @@ TEST(TestSyscalls2, pwrite__write_after_end_of_file) {
 	syscall2__pid = 2122; // Simulate a Process calling syscalls2__open
 	syscall2__namei = inod.inode_id; // "stub" namei by returning this inode id
 
-	block1 = data_block_alloc();
+	data_block_alloc(&block1);
 
-	memset(block1->block, 'a', 15);
-	bwrite(block1);
+	memset(block1.block, 'a', 15);
+	bwrite(&block1);
 
-	inod.direct_blocks[4] = block1->data_block_id;
+	inod.direct_blocks[4] = block1.data_block_id;
 	inod.num_blocks = 5; // 5 blocks are used in this file
 	inod.num_used_bytes_in_last_block = 15; // end of file is at byte offset 16 included in 5th block
 	put_inode(&inod);
@@ -1065,7 +1019,7 @@ TEST(TestSyscalls2, pwrite__write_after_end_of_file) {
 }
 
 TEST(TestSyscalls2, pwrite__write_in_a_block_that_was_already_written) {
-	struct data_block *block1;
+	struct data_block block1;
 	struct inode inod;
 	char buffer[2 * BLOCK_SIZE];
 	char buffer2[2 * BLOCK_SIZE];
@@ -1079,12 +1033,12 @@ TEST(TestSyscalls2, pwrite__write_in_a_block_that_was_already_written) {
 	syscall2__pid = 2122; // Simulate a Process calling syscalls2__open
 	syscall2__namei = inod.inode_id; // "stub" namei by returning this inode id
 
-	block1 = data_block_alloc();
+	data_block_alloc(&block1);
 
-	memset(&block1->block[10], 'a', 5);
-	bwrite(block1);
+	memset(&block1.block[10], 'a', 5);
+	bwrite(&block1);
 
-	inod.direct_blocks[1] = block1->data_block_id;
+	inod.direct_blocks[1] = block1.data_block_id;
 	inod.num_blocks = 2;
 	inod.num_used_bytes_in_last_block = 15;
 	put_inode(&inod);

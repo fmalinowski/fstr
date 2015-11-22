@@ -135,7 +135,7 @@ TEST(TestDataBlocksHandler, data_block_alloc__allocates_correctly_a_datablock) {
 	char datablock_buffer2[BLOCK_SIZE];
 	char free_block_buffer[BLOCK_SIZE];
 
-	struct data_block * result_datablock;
+	struct data_block result_datablock;
 
 	// BEGINNING OF SETUP for the test
 	init_disk_emulator();
@@ -181,38 +181,37 @@ TEST(TestDataBlocksHandler, data_block_alloc__allocates_correctly_a_datablock) {
 	TEST_ASSERT_EQUAL(560, superblock.num_free_blocks);
 
 	// We assert that we get the right free datablock numbers during the allocation
-	result_datablock = data_block_alloc();
-	TEST_ASSERT_EQUAL(first_free_datablock_number, result_datablock->data_block_id);
+	data_block_alloc(&result_datablock);
+	TEST_ASSERT_EQUAL(first_free_datablock_number, result_datablock.data_block_id);
 	read_block(first_free_datablock_number, free_block_buffer); // We want to check whether the block got cleared on disk
 	TEST_ASSERT_EQUAL(0, free_block_buffer[0]); // Assert that block got cleared
 	TEST_ASSERT_EQUAL(0, free_block_buffer[1]);
 	TEST_ASSERT_EQUAL(559, superblock.num_free_blocks);
 
-	result_datablock = data_block_alloc();
-	TEST_ASSERT_EQUAL(second_free_datablock_number, result_datablock->data_block_id);
+	data_block_alloc(&result_datablock);
+	TEST_ASSERT_EQUAL(second_free_datablock_number, result_datablock.data_block_id);
 	read_block(second_free_datablock_number, free_block_buffer); // We want to check whether the block got cleared on disk
 	TEST_ASSERT_EQUAL(0, free_block_buffer[0]); // Assert that block got cleared
 	TEST_ASSERT_EQUAL(0, free_block_buffer[1]);
 	TEST_ASSERT_EQUAL(558, superblock.num_free_blocks);
 
 	// Now that should be the block that was containing the 2nd part of the list of free datablock IDS that should be given back
-	result_datablock = data_block_alloc();
-	TEST_ASSERT_EQUAL_MESSAGE(pointer_next_free_datablock_list, result_datablock->data_block_id, "WASFD");
+	data_block_alloc(&result_datablock);
+	TEST_ASSERT_EQUAL_MESSAGE(pointer_next_free_datablock_list, result_datablock.data_block_id, "WASFD");
 	read_block(pointer_next_free_datablock_list, free_block_buffer); // We want to check whether the block got cleared on disk
 	TEST_ASSERT_EQUAL(0, free_block_buffer[0]); // Assert that block got cleared
 	TEST_ASSERT_EQUAL(0, free_block_buffer[1]);
 	TEST_ASSERT_EQUAL(557, superblock.num_free_blocks);
 
-	result_datablock = data_block_alloc();
-	TEST_ASSERT_EQUAL(first_free_datablock_number_in_second_list, result_datablock->data_block_id);
+	data_block_alloc(&result_datablock);
+	TEST_ASSERT_EQUAL(first_free_datablock_number_in_second_list, result_datablock.data_block_id);
 	read_block(first_free_datablock_number_in_second_list, free_block_buffer); // We want to check whether the block got cleared on disk
 	TEST_ASSERT_EQUAL(0, free_block_buffer[0]); // Assert that block got cleared
 	TEST_ASSERT_EQUAL(0, free_block_buffer[1]);
 	TEST_ASSERT_EQUAL(556, superblock.num_free_blocks);
 
-	// At this point we have no more free block numbers stored so we should get NULL
-	result_datablock = data_block_alloc();
-	TEST_ASSERT_NULL(result_datablock);
+	// At this point we have no more free block numbers stored so we should get -1
+	TEST_ASSERT_EQUAL(-1, data_block_alloc(&result_datablock));
 	TEST_ASSERT_EQUAL(556, superblock.num_free_blocks);
 
 	free_disk_emulator();
@@ -413,7 +412,7 @@ TEST(TestDataBlocksHandler, data_block_free) {
 
 TEST(TestDataBlocksHandler, bread) {
 	int i;
-	struct data_block * datablock;
+	struct data_block datablock;
 	char read_buffer[BLOCK_SIZE], buffer[BLOCK_SIZE];
 
 	init_disk_emulator();
@@ -427,11 +426,11 @@ TEST(TestDataBlocksHandler, bread) {
 	write_block(8201, buffer, BLOCK_SIZE);
 
 	
-	datablock = bread(8201);
-	TEST_ASSERT_EQUAL(8201, datablock->data_block_id);
+	bread(8201, &datablock);
+	TEST_ASSERT_EQUAL(8201, datablock.data_block_id);
 	
 	for (i = 0; i < BLOCK_SIZE; i++) {
-		TEST_ASSERT_EQUAL('d', datablock->block[i]);
+		TEST_ASSERT_EQUAL('d', datablock.block[i]);
 	}
 }
 

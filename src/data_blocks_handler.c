@@ -85,8 +85,7 @@ big_int get_first_free_datablock_starting_from_end_of_block_and_set_0(char * dat
 	return 0;
 }
 
-struct data_block * data_block_alloc(void) {
-	struct data_block * datablock;
+int data_block_alloc(struct data_block *datablock) {
 
 	int position_of_first_datablock;
 	big_int free_block_number_to_be_used;
@@ -103,7 +102,7 @@ struct data_block * data_block_alloc(void) {
 	
 	// Read the datablock containing normally some of the free data block numbers.
 	if (read_block(position_of_first_datablock, read_buffer) == -1) {
-		return NULL;
+		return -1;
 	}
 
 	if (has_at_least_one_datablock_number_left_without_pointer(read_buffer) == 0) {
@@ -113,15 +112,15 @@ struct data_block * data_block_alloc(void) {
 		big_int next_block_number = get_ith_block_number_in_datablock(read_buffer, 1);
 		
 		if (next_block_number == 0) {
-			return NULL;
+			return -1;
 		}
 
 		if (read_block(next_block_number, read_buffer) == -1) {
-			return NULL;
+			return -1;
 		}
 
 		if (write_block(position_of_first_datablock, read_buffer, BLOCK_SIZE) == -1) {
-			return NULL;
+			return -1;
 		}
 
 		// The block that was pointed by 1st data block will be used as the free data block
@@ -132,7 +131,6 @@ struct data_block * data_block_alloc(void) {
 		write_block(position_of_first_datablock, read_buffer, BLOCK_SIZE);
 	}
 
-	datablock = (struct data_block *) malloc(sizeof(struct data_block));
 	datablock->data_block_id = free_block_number_to_be_used;
 	memset(datablock->block, 0, BLOCK_SIZE); // set 0s to the buffer
 	write_block(free_block_number_to_be_used, datablock->block, BLOCK_SIZE); // Set 0s the block on disk too
@@ -140,20 +138,17 @@ struct data_block * data_block_alloc(void) {
 	superblock.num_free_blocks--; // Decrement the number of free data blocks
 	commit_superblock();
 
-	return datablock;
+	return 0;
 }
 
-struct data_block * bread(big_int data_block_nb) {
-	struct data_block * datablock;
+int bread(big_int data_block_nb, struct data_block *datablock) {
 
-	datablock = (struct data_block *) malloc(sizeof(struct data_block));
 	if (read_block(data_block_nb, datablock->block) == -1) {
-		free(datablock);
-		return NULL;
+		return -1;
 	}
 
 	datablock->data_block_id = data_block_nb;
-	return datablock;
+	return 0;
 }
 
 int bwrite(struct data_block * datablock) {
@@ -207,8 +202,4 @@ int data_block_free(struct data_block * datablock) {
 	commit_superblock();
 
 	return 0;
-}
-
-void free_data_block_pointer(struct data_block * db) {
-	free(db);
 }

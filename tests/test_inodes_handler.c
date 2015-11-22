@@ -80,7 +80,7 @@ TEST(TestInodesHandler, test_iput_works_correctly){ // Wait for Francois's reply
 	//printf("inode allocated\n");
 	TEST_ASSERT_TRUE(ialloc(&inod) != -1);
 	//printf("inode allocated, not null\n");
-	struct data_block *blok;
+	struct data_block blok;
 	int i, j;
 	big_int k;
 	x = inod.inode_id;
@@ -99,10 +99,10 @@ TEST(TestInodesHandler, test_iput_works_correctly){ // Wait for Francois's reply
 		inod.direct_blocks[i] = i + 1000;
 	}
 	inod.single_indirect_block = 16 + 1000;
-	blok = bread(inod.single_indirect_block);
+	bread(inod.single_indirect_block, &blok);
 	j = 20 + 1000;
 	for(k = 0; k < BLOCK_SIZE/sizeof(big_int); k++, j++){
-		memcpy(&(blok->block[k]), &j, sizeof(big_int));
+		memcpy(&(blok.block[k]), &j, sizeof(big_int));
 	}
 
 	inod.double_indirect_block = 17 + 1000;

@@ -5,13 +5,12 @@
 
 
 // TODO Can we just return block id?
-struct data_block * data_block_alloc(void); // Allocate a new data block
-struct data_block * bread(big_int data_block_nb); // Read the data block from disk
+int data_block_alloc(struct data_block *); // Allocate a new data block
+int bread(big_int data_block_nb, struct data_block *); // Read the data block from disk
 int bwrite(struct data_block *); // Write the data block to disk
 int data_block_free(struct data_block *); // WARNING: this doesn't free the struct data_block. It has to be done by developer
 
 // UTILITIES
-void free_data_block_pointer(struct data_block * db); // To be used only in tests!!!
 big_int get_block_number_of_first_datablock(void);
 big_int get_ith_block_number_in_datablock(char * datablock, int i);
 void set_ith_block_number_in_datablock(char * datablock, int i, big_int block_number);
