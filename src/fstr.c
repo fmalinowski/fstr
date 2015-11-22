@@ -105,7 +105,7 @@ static int fstr_chmod(const char *path, mode_t mode) {
 }
 
 static int fstr_chown(const char *path, uid_t uid, gid_t gid) {
-LOGD("fstr_chown");
+    LOGD("fstr_chown");
     if(syscalls1__chown(path, uid, gid) == -1) {
         return -errno;
     }
@@ -129,7 +129,16 @@ static struct fuse_operations fstr_fuse_oper = {
 };
 
 int main(int argc, char *argv[]) {
-	init_disk_emulator();
-    init_superblock();
+
+    if(init_disk_emulator() == -1) {
+        fprintf(stderr, "Failed to init disk emulator\n");
+        return -1;
+    }
+
+    if(init_superblock() == -1) {
+        fprintf(stderr, "Failed to init superblock\n");
+        return -1;
+    }
+    
 	return fuse_main(argc, argv, &fstr_fuse_oper, NULL);
 }

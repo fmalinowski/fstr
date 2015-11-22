@@ -4,10 +4,6 @@
 #include "block_utils.h"
 #include "namei.h"
 
-struct superblock superblock = {
-	.commit = commit_superblock
-};
-
 int init_superblock(void) {
 	struct data_block block;
 	if(read_block(0, &block.block)) {
@@ -16,7 +12,6 @@ int init_superblock(void) {
 	}
 
 	memcpy(&superblock, &block.block, sizeof(struct superblock));
-
 	return 0;
 }
 

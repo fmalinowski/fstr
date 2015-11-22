@@ -18,17 +18,15 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+
 #define DISK_STORE_PATH "/dev/FSTR_DEV"
 
-
-//#define DEBUG
+// #define DEBUG
 #ifdef DEBUG
 #define LOGD(A, ...) printf("%s:%d " A "\n", __FILE__, __LINE__, ##__VA_ARGS__);
 #else
 #define LOGD(A, ...)
 #endif
-
-
 
 #define FREE_BLOCKS_CACHE_SIZE 0
 #define FREE_INODES_CACHE_SIZE 0
@@ -74,9 +72,7 @@ struct superblock {
 	// methods
 	// This method should be called everytime update is made to superblock
 	int (*commit)(void);
-};
-
-extern struct superblock superblock;
+} superblock;
 
 struct inode {
 	int inode_id;
