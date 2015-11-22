@@ -18,4 +18,6 @@ int syscalls1__utimens(const char *path, const struct timespec tv[2]);
 int syscalls1__chmod(const char *path, mode_t mode);
 int syscalls1__chown(const char *path, uid_t uid, gid_t gid);
 
+int syscalls1__rename(const char *oldpath, const char *newpath);
+
 #endif

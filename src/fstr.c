@@ -112,6 +112,14 @@ static int fstr_chown(const char *path, uid_t uid, gid_t gid) {
     return 0;
 }
 
+static int fstr_rename(const char *oldpath, const char *newpath) {
+    LOGD("fstr_rename");
+    if(syscalls1__rename(oldpath, newpath) == -1) {
+        return -errno;
+    }
+    return 0;
+}
+
 static struct fuse_operations fstr_fuse_oper = {
 	.getattr	= fstr_getattr,
 	.mkdir		= fstr_mkdir,
@@ -125,7 +133,8 @@ static struct fuse_operations fstr_fuse_oper = {
 	.write		= fstr_write,
     .utimens    = fstr_utimens,
     .chmod      = fstr_chmod,
-    .chown      = fstr_chown
+    .chown      = fstr_chown,
+    .rename     = fstr_rename
 };
 
 int main(int argc, char *argv[]) {

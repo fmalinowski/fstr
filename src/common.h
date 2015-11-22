@@ -119,6 +119,9 @@ int init_dir_block(struct dir_block *dir_block, int dir_inode_id, int parent_ino
 // Insert inode entry in parent's inode. Might alloc dir_block if required
 int add_entry_to_parent(struct inode *parent_inode, int inode_id, const char *name);
 
+// Remove inode entry from parent's inode.
+int remove_entry_from_parent(struct inode *parent_inode, int inode_id);
+
 // Insert inode entry to first available position in dir_block
 int add_entry_to_dir_block(struct dir_block *dir_block, int inode_id, const char *name);
 

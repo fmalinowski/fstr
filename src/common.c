@@ -84,6 +84,23 @@ int add_entry_to_parent(struct inode *parent_inode, int inode_id, const char *na
 	return write_block(block->data_block_id, dir_block, sizeof(struct dir_block));
 }
 
+int remove_entry_from_parent(struct inode *parent_inode, int inode_id) {
+	struct dir_block dir_block;
+	big_int total_dir_blocks = parent_inode->num_blocks;
+	unsigned int i;
+
+	for(i = 0; i < total_dir_blocks; ++i) {
+		big_int block_id = get_block_id(parent_inode, i);
+		if(block_id > 0 && read_block(block_id, &dir_block) == 0) {
+			if(remove_entry_from_dir_block(&dir_block, inode_id) == 0) {
+				return write_block(block_id, &dir_block, sizeof(struct dir_block));
+			}
+		}
+	}
+
+	return -1;
+}
+
 int add_entry_to_dir_block(struct dir_block *dir_block, int inode_id, const char *name) {
 	int len = BLOCK_SIZE / NAMEI_ENTRY_SIZE;
 	int i;
