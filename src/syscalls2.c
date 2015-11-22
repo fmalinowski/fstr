@@ -316,7 +316,7 @@ big_int convert_byte_offset_to_ith_datablock(off_t offset) {
 ssize_t syscalls2__pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 	struct file_descriptor_entry * fde;
 	struct inode inod;
-	struct data_block * db;
+	struct data_block db;
 	int pid;
 	size_t remaining_bytes, bytes_to_be_copied, read_bytes;
 	off_t current_offset_in_block;
@@ -344,7 +344,6 @@ ssize_t syscalls2__pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 
 	block_num_pos = convert_byte_offset_to_ith_datablock(offset);
 	current_block_number = get_ith_datablock_number(&inod, block_num_pos);
-	db = NULL;
 
 	read_bytes = 0;
 	remaining_bytes = nbyte;
@@ -372,8 +371,8 @@ ssize_t syscalls2__pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 			memset(&((char *)buf)[read_bytes], 0, bytes_to_be_copied);
 		}
 		else {
-			db = bread(current_block_number);
-			memcpy(&((char *)buf)[read_bytes], &db->block[current_offset_in_block], bytes_to_be_copied);
+			bread(current_block_number, &db);
+			memcpy(&((char *)buf)[read_bytes], &db.block[current_offset_in_block], bytes_to_be_copied);
 		}
 
 		read_bytes += bytes_to_be_copied;
@@ -386,17 +385,9 @@ ssize_t syscalls2__pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 			// We need to read the next datablock cause we have reached the end of a block in this read step
 			block_num_pos++;
 			current_block_number = get_ith_datablock_number(&inod, block_num_pos);
-
-			if (db != NULL) {
-				free(db);
-				db = NULL;
-			}
 		}
 	}
 
-	if (db != NULL) {
-		free(db);
-	}
 	fde->byte_offset = offset + read_bytes;
 	return read_bytes;
 }
@@ -404,7 +395,7 @@ ssize_t syscalls2__pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offset) {
 	struct file_descriptor_entry * fde;
 	struct inode inod;
-	struct data_block * db;
+	struct data_block db;
 	int pid;
 	size_t remaining_bytes, bytes_to_be_copied, written_bytes;
 	off_t current_offset_in_block;
@@ -445,15 +436,15 @@ ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offse
 
 		if (current_block_number == 0) {
 			// if datablock is not allocated
-			db = data_block_alloc();
-			set_ith_datablock_number(&inod, block_num_pos, db->data_block_id);
+			data_block_alloc(&db);
+			set_ith_datablock_number(&inod, block_num_pos, db.data_block_id);
 		}
 		else {
-			db = bread(current_block_number);
+			bread(current_block_number, &db);
 		}
 
-		memcpy(&db->block[current_offset_in_block], &((char *)buf)[written_bytes], bytes_to_be_copied);
-		bwrite(db);
+		memcpy(&db.block[current_offset_in_block], &((char *)buf)[written_bytes], bytes_to_be_copied);
+		bwrite(&db);
 		written_bytes += bytes_to_be_copied;
 
 		current_offset_in_block = (current_offset_in_block + bytes_to_be_copied) % BLOCK_SIZE;
@@ -465,7 +456,6 @@ ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offse
 			block_num_pos++;
 			current_block_number = get_ith_datablock_number(&inod, block_num_pos);
 		}
-		free(db);
 	}
 
 	// Update the inode for the number of blocks used and position of last byte in file

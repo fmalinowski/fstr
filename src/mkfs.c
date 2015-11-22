@@ -126,8 +126,8 @@ int create_free_blocks(void) {
 }
 
 int create_root_dir(void) {
-    struct data_block *block = data_block_alloc();
-    if(block == NULL) {
+    struct data_block block;
+    if(data_block_alloc(&block) == -1) {
         fprintf(stderr, "could not find a free data block\n");
         errno = EDQUOT;
         return -1;
@@ -144,7 +144,7 @@ int create_root_dir(void) {
     inode.mode = S_IFDIR;
 
     // Init the new dir block
-    big_int block_id = block->data_block_id;
+    big_int block_id = block.data_block_id;
     struct dir_block dir_block;
     if(init_dir_block(&dir_block, inode.inode_id, ROOT_INODE_NUMBER) == -1) {
         fprintf(stderr, "failed to format a dir block\n");

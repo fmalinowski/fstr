@@ -66,22 +66,22 @@ int add_entry_to_parent(struct inode *parent_inode, int inode_id, const char *na
 	}
 
 	// Alloc a new block and add entry there
-	struct data_block *block = data_block_alloc();
-	if(block == NULL) {
+	struct data_block block;
+	if(data_block_alloc(&block) == -1) {
 		fprintf(stderr, "could not alloc data block\n");
 		return -1;
 	}
 
 	// Add this block to inode
-	if(set_block_id(parent_inode, parent_inode->num_blocks, block->data_block_id) == -1) {
+	if(set_block_id(parent_inode, parent_inode->num_blocks, block.data_block_id) == -1) {
 		fprintf(stderr, "could not add newly allocated block to inode\n");
 		return -1;
 	}
 	parent_inode->num_blocks++;
 
-	struct dir_block *dir_block = (struct dir_block*) block->block;
+	struct dir_block *dir_block = (struct dir_block*) block.block;
 	add_entry_to_dir_block(dir_block, inode_id, name);
-	return write_block(block->data_block_id, dir_block, sizeof(struct dir_block));
+	return write_block(block.data_block_id, dir_block, sizeof(struct dir_block));
 }
 
 int remove_entry_from_parent(struct inode *parent_inode, int inode_id) {

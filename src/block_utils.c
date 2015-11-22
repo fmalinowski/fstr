@@ -105,13 +105,12 @@ int set_double_indirect_block_id(big_int double_indirect_block_id, big_int index
 
 		// Make sure we have valid block
 		if(double_indirect_block.list[bucket] == 0) {
-			struct data_block *data_block = data_block_alloc();
-			if(data_block == NULL) {
+			struct data_block data_block;
+			if(data_block_alloc(&data_block) == -1) {
 				fprintf(stderr, "Failed to alloc data block\n");
 				return -1;
 			}
-			double_indirect_block.list[bucket] = data_block->data_block_id;
-			free(data_block);
+			double_indirect_block.list[bucket] = data_block.data_block_id;
 			write_block(double_indirect_block_id, &double_indirect_block, sizeof(struct block_id_list));
 		}
 		return set_single_indirect_block_id(double_indirect_block.list[bucket], offset, block_id);
@@ -133,13 +132,12 @@ int set_triple_indirect_block_id(big_int triple_indirect_block_id, big_int index
 
 		// Make sure we have valid block
 		if(triple_indirect_block.list[bucket] == 0) {
-			struct data_block *data_block = data_block_alloc();
-			if(data_block == NULL) {
+			struct data_block data_block;
+			if(data_block_alloc(&data_block) == -1) {
 				fprintf(stderr, "Failed to alloc data block\n");
 				return -1;
 			}
-			triple_indirect_block.list[bucket] = data_block->data_block_id;
-			free(data_block);
+			triple_indirect_block.list[bucket] = data_block.data_block_id;
 			write_block(triple_indirect_block_id, &triple_indirect_block, sizeof(struct block_id_list));
 		}
 		return set_double_indirect_block_id(triple_indirect_block.list[bucket], offset, block_id);
@@ -159,13 +157,12 @@ int set_block_id(struct inode *inode, big_int index, big_int block_id) {
 	if(index < BLOCK_ID_LIST_LENGTH) {
 		// Make sure we have valid block
 		if(inode->single_indirect_block == 0) {
-			struct data_block *data_block = data_block_alloc();
-			if(data_block == NULL) {
+			struct data_block data_block;
+			if(data_block_alloc(&data_block) == -1) {
 				fprintf(stderr, "Failed to alloc data block\n");
 				return -1;
 			}
-			inode->single_indirect_block = data_block->data_block_id;
-			free(data_block);
+			inode->single_indirect_block = data_block.data_block_id;
 		}
 		return set_single_indirect_block_id(inode->single_indirect_block, index, block_id);
 	}
@@ -175,13 +172,12 @@ int set_block_id(struct inode *inode, big_int index, big_int block_id) {
 	if(index < BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH) {
 		// Make sure we have valid block
 		if(inode->double_indirect_block == 0) {
-			struct data_block *data_block = data_block_alloc();
-			if(data_block == NULL) {
+			struct data_block data_block;
+			if(data_block_alloc(&data_block) == -1) {
 				fprintf(stderr, "Failed to alloc data block\n");
 				return -1;
 			}
-			inode->double_indirect_block = data_block->data_block_id;
-			free(data_block);
+			inode->double_indirect_block = data_block.data_block_id;
 		}
 		return set_double_indirect_block_id(inode->double_indirect_block, index, block_id);
 	}
@@ -191,13 +187,12 @@ int set_block_id(struct inode *inode, big_int index, big_int block_id) {
 	if(index < BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH) {
 		// Make sure we have valid block
 		if(inode->triple_indirect_block == 0) {
-			struct data_block *data_block = data_block_alloc();
-			if(data_block == NULL) {
+			struct data_block data_block;
+			if(data_block_alloc(&data_block) == -1) {
 				fprintf(stderr, "Failed to alloc data block\n");
 				return -1;
 			}
-			inode->triple_indirect_block = data_block->data_block_id;
-			free(data_block);
+			inode->triple_indirect_block = data_block.data_block_id;
 		}
 		return set_triple_indirect_block_id(inode->triple_indirect_block, index, block_id);
 	}

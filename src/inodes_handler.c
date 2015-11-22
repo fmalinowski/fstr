@@ -6,7 +6,6 @@
 int iget(int inode_number, struct inode* target){
 	int block_number_of_inode;
 	int inode_offset_in_block;
-	struct data_block * inode_block;
 
 	if(inode_number < 1 || inode_number > NUM_INODES){
 		LOGD("IGET: invalid inode number %d", inode_number);
@@ -18,14 +17,12 @@ int iget(int inode_number, struct inode* target){
 	inode_offset_in_block = ((inode_number - 1) % (BLOCK_SIZE / INODE_SIZE)) * INODE_SIZE;
 	//printf("block number of inode %d, inode offset in block %d", block_number_of_inode, inode_offset_in_block);
 	//Read from disk
-	inode_block = bread(block_number_of_inode);
-	//printf("block number read is %d", (int)inode_block->data_block_id);
-	//block read error
-	if(!inode_block){
+	struct data_block inode_block;
+	if(bread(block_number_of_inode, &inode_block) == -1){
 		return -1;
 	}
 
-	memcpy(target, &(inode_block->block[inode_offset_in_block]), sizeof(struct inode));
+	memcpy(target, &(inode_block.block[inode_offset_in_block]), sizeof(struct inode));
 	LOGD("returning target inode id %d", target->inode_id);
 	return 0; // Success
 }
@@ -49,27 +46,27 @@ int iput(struct inode * inod) {
 	}
 
 	// Else, write the inode block to disk to save changes
-	struct data_block *blok = bread(ILIST_BEGIN + ((inod->inode_id - 1)/(BLOCK_SIZE/INODE_SIZE)));
-	if(blok == NULL){
+	struct data_block blok;
+	if(bread(ILIST_BEGIN + ((inod->inode_id - 1)/(BLOCK_SIZE/INODE_SIZE)), &blok) == -1){
 		fprintf(stderr, "failed to read block\n");
 		return -1;
 	}
 	big_int inode_offset_in_block = ((inod->inode_id - 1) % (BLOCK_SIZE/INODE_SIZE)) * INODE_SIZE;
-	memcpy(&(blok->block[inode_offset_in_block]), inod, sizeof(struct inode));
-	return bwrite(blok);
+	memcpy(&(blok.block[inode_offset_in_block]), inod, sizeof(struct inode));
+	return bwrite(&blok);
 }
 
 int next_free_inode_number(void){ // It's correctness depends on how mkfs organizes stuff
 	
-	struct data_block *blok;
+	struct data_block blok;
 	struct inode *inod;
 	int i, j;
 	int total_blocks_for_inodes = NUM_INODE_BLOCKS;
 	inod = (struct inode*)malloc(sizeof(struct inode));
 	for(i = 1; i <= total_blocks_for_inodes; i++){
-		blok = bread(i);
+		bread(i, &blok);
 		for(j = 0; j < BLOCK_SIZE/INODE_SIZE; j++){
-			memcpy(inod, &(blok->block[j*INODE_SIZE]), sizeof(struct inode));
+			memcpy(inod, &(blok.block[j*INODE_SIZE]), sizeof(struct inode));
 			if(inod->type == TYPE_FREE){
 				return inod->inode_id;
 			}
@@ -80,7 +77,7 @@ int next_free_inode_number(void){ // It's correctness depends on how mkfs organi
 
 int ialloc(struct inode* inod){  // THIS DOES NOT SET THE FILETYPE OF INODE. MUST BE DONE AT LAYER 2
 	
-	struct data_block *blok3;
+	struct data_block blok3;
 	int free_inode_number;
 	int inode_offset_in_block;
 	
@@ -97,13 +94,13 @@ int ialloc(struct inode* inod){  // THIS DOES NOT SET THE FILETYPE OF INODE. MUS
 	inod->links_nb = 1;
 
 	// Update the inode on disk
-	blok3 = bread(ILIST_BEGIN + ((inod->inode_id - 1) / (BLOCK_SIZE / INODE_SIZE)));
+	bread(ILIST_BEGIN + ((inod->inode_id - 1) / (BLOCK_SIZE / INODE_SIZE)), &blok3);
 	
 	inode_offset_in_block = ((inod->inode_id - 1) % (BLOCK_SIZE / INODE_SIZE)) * INODE_SIZE;	
 	inod->type = TYPE_ORDINARY;
-	memcpy(&(blok3->block[inode_offset_in_block]), inod, sizeof(struct inode));
+	memcpy(&(blok3.block[inode_offset_in_block]), inod, sizeof(struct inode));
 	
-	if(bwrite(blok3) == 0){
+	if(bwrite(&blok3) == 0){
 		if(commit_superblock() == 0){
 			LOGD("ialloc returning inode id: %d", inod->inode_id);
 			return 0;
@@ -119,7 +116,7 @@ int ialloc(struct inode* inod){  // THIS DOES NOT SET THE FILETYPE OF INODE. MUS
 
 int ifree(struct inode * inod){
 	
-	struct data_block *blok3;
+	struct data_block blok3;
 	int inode_offset_in_block;
 
 	superblock.num_free_inodes++;
@@ -130,11 +127,11 @@ int ifree(struct inode * inod){
         .type = TYPE_FREE
     };
 
-	blok3 = bread(ILIST_BEGIN + ((fresh_inode.inode_id - 1) / (BLOCK_SIZE / INODE_SIZE)));
+	bread(ILIST_BEGIN + ((fresh_inode.inode_id - 1) / (BLOCK_SIZE / INODE_SIZE)), &blok3);
 	inode_offset_in_block = ((fresh_inode.inode_id - 1) % (BLOCK_SIZE / INODE_SIZE)) * INODE_SIZE;
-	memcpy(&(blok3->block[inode_offset_in_block]), &fresh_inode, sizeof(struct inode));
+	memcpy(&(blok3.block[inode_offset_in_block]), &fresh_inode, sizeof(struct inode));
 	
-	if(bwrite(blok3) == 0){
+	if(bwrite(&blok3) == 0){
 		if(commit_superblock() == 0){
 			return 0;
 		}
