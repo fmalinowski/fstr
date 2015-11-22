@@ -133,26 +133,26 @@ int create_root_dir(void) {
         return -1;
     }
 
-    struct inode *inode = ialloc();
-    if(inode == NULL) {
+    struct inode inode;
+    if(ialloc(&inode) == -1) {
         fprintf(stderr, "could not find a free inode\n");
         errno = EDQUOT;
         return -1;
     }
 
-    inode->type = TYPE_DIRECTORY;
-    inode->mode = S_IFDIR;
+    inode.type = TYPE_DIRECTORY;
+    inode.mode = S_IFDIR;
 
     // Init the new dir block
     big_int block_id = block->data_block_id;
     struct dir_block dir_block;
-    if(init_dir_block(&dir_block, inode->inode_id, ROOT_INODE_NUMBER) == -1) {
+    if(init_dir_block(&dir_block, inode.inode_id, ROOT_INODE_NUMBER) == -1) {
         fprintf(stderr, "failed to format a dir block\n");
         return -1;
     }
     write_block(block_id, &dir_block, sizeof(struct dir_block));
-    inode->direct_blocks[0] = block_id;
-    inode->num_blocks++;
-    put_inode(inode);
+    inode.direct_blocks[0] = block_id;
+    inode.num_blocks++;
+    put_inode(&inode);
     return 0;
 }

@@ -27,17 +27,18 @@ int namei(const char *path) {
 	}
 
 	char *next_file = strtok(strdup(path), PATH_DELIMITER);
-	struct inode *next_inode = iget(ROOT_INODE_NUMBER);
+	struct inode next_inode;
+	int next_inode_success = iget(ROOT_INODE_NUMBER, &next_inode);
 	struct dir_block dir_block;
 	big_int block_id;
 
-	while(next_file != NULL && next_inode != NULL) {
+	while(next_file != NULL && next_inode_success == 0) {
 
 		int next_inode_number = -1;
 		big_int i;
-		big_int len = next_inode->num_blocks;
+		big_int len = next_inode.num_blocks;
 		for(i = 0; i < len; ++i) {
-			block_id = get_block_id(next_inode, i);
+			block_id = get_block_id(&next_inode, i);
 			read_block(block_id, &dir_block);
 			next_inode_number = check_data_block_for_next_entry(&dir_block, next_file);
 			if(next_inode_number != -1) {
@@ -51,14 +52,14 @@ int namei(const char *path) {
 		}
 
 		next_file = strtok(NULL, PATH_DELIMITER);
-		next_inode = iget(next_inode_number);
+		next_inode_success = iget(next_inode_number, &next_inode);
 	}
 
-	if(next_inode == NULL){
-		fprintf(stderr, "iget returned null, exiting namei..\n");
+	if(next_inode_success == -1){
+		fprintf(stderr, "iget returned -1, exiting namei..\n");
 		return -1;
 	}
-	LOGD("namei inode id: %d", next_inode->inode_id);
+	LOGD("namei inode id: %d", next_inode.inode_id);
 
-	return next_inode->inode_id;
+	return next_inode.inode_id;
 }

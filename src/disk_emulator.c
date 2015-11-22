@@ -2,7 +2,7 @@
 #include "mkfs.h"
 #include "common.h"
 // in memory emulation of file system
-//#define IN_MEMORY_FS
+// #define IN_MEMORY_FS
 
 
 #ifdef IN_MEMORY_FS
