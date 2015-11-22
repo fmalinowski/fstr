@@ -1,3 +1,4 @@
+#include "common.h"
 #include "mkfs.h"
 #include "disk_emulator.h"
 #include "data_blocks_handler.h"
@@ -50,7 +51,7 @@ int create_superblock(void) {
     }
     superblock.next_free_inode = 1; // first free inode number
 
-    LOGD("FS size: %" PRIu64 "", superblock.fs_size);
+    LOGD("FS size: %" PRIu64, superblock.fs_size);
     LOGD("Block size: %d", BLOCK_SIZE);
     LOGD("No. of blocks: %d", NUM_BLOCKS);
     LOGD("inode size: %d", INODE_SIZE);

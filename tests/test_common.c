@@ -29,7 +29,7 @@ TEST_TEAR_DOWN(TestCommon) {
 TEST(TestCommon, commit_and_read_superblock) {
 	superblock.num_free_blocks++;
 	superblock.num_free_inodes++;
-	superblock.commit();
+	commit_superblock();
 
 	struct data_block data_block;
 	read_block(0, &data_block.block);

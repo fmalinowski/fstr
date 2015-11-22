@@ -99,7 +99,7 @@ struct inode* ialloc(void){  // THIS DOES NOT SET THE FILETYPE OF INODE. MUST BE
 	inod = iget(free_inode_number);
 	
 	superblock.num_free_inodes--; // decrease count of number of free inodes in the file system
-	superblock.commit();
+	commit_superblock();
 	inod->links_nb = 1;
 
 	// Update the inode on disk
@@ -129,7 +129,7 @@ int ifree(struct inode * inod){
 	int inode_offset_in_block;
 
 	superblock.num_free_inodes++;
-	superblock.commit();
+	commit_superblock();
 
 	struct inode fresh_inode = {
         .inode_id = inod->inode_id,

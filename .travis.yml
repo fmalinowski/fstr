@@ -5,4 +5,10 @@ addons:
     packages:
       - libfuse-dev
 script:
+  - cd src
+  - sudo make
+  - sudo make mkfs
+  - cd ..
+  - sudo ./bin/mkfs
+  - cd tests
   - sudo make

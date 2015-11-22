@@ -67,14 +67,14 @@ int disk_created = -1;
 int init_disk_emulator(void) { 
 	
 	if(disk_created == -1){
-		disk_store = open(DISK_STORE_PATH, O_CREAT | O_RDWR);
+		disk_store = open(DISK_STORE_PATH, O_RDWR);
 		if (disk_store == -1){
-    		fprintf(stderr, "Error opening disk store: %d\n", errno);
+    		fprintf(stderr, "Error opening disk store\n");
     		return -ENODEV; // failure
   		}
-  		LOGD("DISK_EMULATOR: File descriptor of disk: %d. Creating file system...", disk_store);
+  		LOGD("DISK_EMULATOR: File descriptor of disk: %d", disk_store);
 		disk_created = 0;
-		return create_fs(); // success
+		return 0; // success
 	}
 	else{
 		LOGD("DISK_EMULATOR: disk store already initialised");
@@ -97,7 +97,6 @@ int read_block(big_int block_id, void * target) {
 	if(block_id < NUM_BLOCKS){
 		if(lseek(disk_store, block_id * BLOCK_SIZE, SEEK_SET) != -1){ // seek to position of block id
 			if(read(disk_store, target, BLOCK_SIZE) == BLOCK_SIZE){
-				LOGD("READ_BLOCK: successfully read block");
 				return 0; // read successful
 			}
 		}
@@ -118,7 +117,6 @@ int write_block(big_int block_id, void * buffer, size_t buffer_size) {
 					
 					if(temp && lseek(disk_store, (block_id * BLOCK_SIZE) + copy_size, SEEK_SET) != -1){
 						if(write(disk_store, temp, BLOCK_SIZE - copy_size) != -1){
-							LOGD("WRITE_BLOCK: successfully written bytes to block");
 							free(temp);
 							return 0; // Success				
 						}
@@ -129,7 +127,6 @@ int write_block(big_int block_id, void * buffer, size_t buffer_size) {
 					LOGD("something went wrong");
 					return -1;
 				}
-				LOGD("WRITE_BLOCK: successfully written %d bytes to block", bytes_written);
 				return 0; // write successful	
 			}
 		}
