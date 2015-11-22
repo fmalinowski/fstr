@@ -84,17 +84,17 @@ TEST(TestMkfs, free_lists_are_correctly_initialized) {
 TEST(TestMkfs, create_fs) {
 	create_fs();
 
-	struct inode *root_inode = iget(ROOT_INODE_NUMBER);
-	TEST_ASSERT_TRUE(NULL != root_inode);
+	struct inode root_inode;
+	TEST_ASSERT_TRUE(-1 != iget(ROOT_INODE_NUMBER, &root_inode));
 
-	TEST_ASSERT_EQUAL(ROOT_INODE_NUMBER, root_inode->inode_id);
-	TEST_ASSERT_EQUAL(1, root_inode->links_nb);
-	TEST_ASSERT_EQUAL(1, root_inode->num_blocks);
-	TEST_ASSERT_EQUAL(TYPE_DIRECTORY, root_inode->type);
-	TEST_ASSERT_TRUE(root_inode->direct_blocks[0] != 0);
+	TEST_ASSERT_EQUAL(ROOT_INODE_NUMBER, root_inode.inode_id);
+	TEST_ASSERT_EQUAL(1, root_inode.links_nb);
+	TEST_ASSERT_EQUAL(1, root_inode.num_blocks);
+	TEST_ASSERT_EQUAL(TYPE_DIRECTORY, root_inode.type);
+	TEST_ASSERT_TRUE(root_inode.direct_blocks[0] != 0);
 
 	struct dir_block dir_block;
-	read_block(root_inode->direct_blocks[0], &dir_block);
+	read_block(root_inode.direct_blocks[0], &dir_block);
 
 	TEST_ASSERT_EQUAL(ROOT_INODE_NUMBER, dir_block.inode_ids[0]);
 	TEST_ASSERT_EQUAL(0, strcmp(".", dir_block.names[0]));

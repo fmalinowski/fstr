@@ -3,15 +3,14 @@
 #include "block_utils.h"
 // ASSUMING INODE NUMBERS START FROM 1
 
-struct inode* iget(int inode_number){
-	struct inode * target;
+int iget(int inode_number, struct inode* target){
 	int block_number_of_inode;
 	int inode_offset_in_block;
 	struct data_block * inode_block;
 
 	if(inode_number < 1 || inode_number > NUM_INODES){
 		LOGD("IGET: invalid inode number %d", inode_number);
-		return NULL;
+		return -1;
 	}
 	//printf("going to get inode number %d", (int)inode_number);
 	block_number_of_inode = ILIST_BEGIN + ((inode_number - 1) / (BLOCK_SIZE / INODE_SIZE));
@@ -23,16 +22,12 @@ struct inode* iget(int inode_number){
 	//printf("block number read is %d", (int)inode_block->data_block_id);
 	//block read error
 	if(!inode_block){
-		return NULL;
+		return -1;
 	}
- 	target = (struct inode*) malloc(sizeof(struct inode));
-	if(target != NULL){
-		memcpy(target, &(inode_block->block[inode_offset_in_block]), sizeof(struct inode));
-		LOGD("returning target inode id %d", target->inode_id);
-		return target; // Success
-	}
-	LOGD("IGET: target is null");
-	return NULL;
+
+	memcpy(target, &(inode_block->block[inode_offset_in_block]), sizeof(struct inode));
+	LOGD("returning target inode id %d", target->inode_id);
+	return 0; // Success
 }
 
 int iput(struct inode * inod) {
@@ -83,9 +78,8 @@ int next_free_inode_number(void){ // It's correctness depends on how mkfs organi
 	return -1;
 }
 
-struct inode* ialloc(void){  // THIS DOES NOT SET THE FILETYPE OF INODE. MUST BE DONE AT LAYER 2
+int ialloc(struct inode* inod){  // THIS DOES NOT SET THE FILETYPE OF INODE. MUST BE DONE AT LAYER 2
 	
-	struct inode *inod;
 	struct data_block *blok3;
 	int free_inode_number;
 	int inode_offset_in_block;
@@ -93,10 +87,10 @@ struct inode* ialloc(void){  // THIS DOES NOT SET THE FILETYPE OF INODE. MUST BE
 	free_inode_number = next_free_inode_number(); 
 	if(free_inode_number == -1){
 		LOGD("IALLOC: free inode not found");
-		return NULL;
+		return -1;
 	}
 	
-	inod = iget(free_inode_number);
+	iget(free_inode_number, inod);
 	
 	superblock.num_free_inodes--; // decrease count of number of free inodes in the file system
 	commit_superblock();
@@ -112,15 +106,15 @@ struct inode* ialloc(void){  // THIS DOES NOT SET THE FILETYPE OF INODE. MUST BE
 	if(bwrite(blok3) == 0){
 		if(commit_superblock() == 0){
 			LOGD("ialloc returning inode id: %d", inod->inode_id);
-			return inod;
+			return 0;
 		}
 		else{
 			LOGD("IPUT: superblock commit was unsuccessful");		
-			return NULL;
+			return -1;
 		}
 	}
 	LOGD("IPUT: bwrite was unsuccessful");
-	return NULL;
+	return -1;
 }
 
 int ifree(struct inode * inod){
@@ -151,8 +145,4 @@ int ifree(struct inode * inod){
 	}
 	LOGD("IFREE: bwrite was unsuccessful");
 	return -1;
-}
-
-void free_inode(struct inode * inod) {		
-	free(inod);		
 }

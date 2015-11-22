@@ -182,7 +182,7 @@ int get_size_of_file(big_int num_used_blocks, int num_used_bytes_in_last_block) 
 
 int syscalls2__open(const char *path, int oflag, ...) {
 	struct file_descriptor_entry * fde;
-	struct inode * inod;
+	struct inode inod;
 	int inode_number, pid;
 	mode_t mode;
 
@@ -207,7 +207,7 @@ int syscalls2__open(const char *path, int oflag, ...) {
 		return -1;
 	}
 
-	inod = get_inode(inode_number);
+	get_inode(inode_number, &inod);
 
 	pid = syscall2__get_pid();
 	fde = allocate_file_descriptor_entry(pid);
@@ -233,7 +233,6 @@ int syscalls2__open(const char *path, int oflag, ...) {
 			// We need to look for last block number that is not a zero in the list of blocks of the inode. Then if it's indirect block, we need to look inside
 		}
 		else {
-			free(inod);
 			errno = EACCES;
 			return -1;
 		}
@@ -244,9 +243,8 @@ int syscalls2__open(const char *path, int oflag, ...) {
 
 	fde->inode_number = inode_number;
 
-	inod->last_accessed_file = time(NULL);
-	put_inode(inod);
-	free(inod);
+	inod.last_accessed_file = time(NULL);
+	put_inode(&inod);
 	return fde->fd;
 }
 
@@ -317,7 +315,7 @@ big_int convert_byte_offset_to_ith_datablock(off_t offset) {
 
 ssize_t syscalls2__pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 	struct file_descriptor_entry * fde;
-	struct inode * inod;
+	struct inode inod;
 	struct data_block * db;
 	int pid;
 	size_t remaining_bytes, bytes_to_be_copied, read_bytes;
@@ -337,15 +335,15 @@ ssize_t syscalls2__pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 		return -1;
 	}
 
-	inod = get_inode(fde->inode_number);
+	get_inode(fde->inode_number, &inod);
 
-	if (offset >= get_size_of_file(inod->num_blocks, inod->num_used_bytes_in_last_block)) {
+	if (offset >= get_size_of_file(inod.num_blocks, inod.num_used_bytes_in_last_block)) {
 		errno = EINVAL;
 		return 0; // request to read at position bigger than size of file
 	}
 
 	block_num_pos = convert_byte_offset_to_ith_datablock(offset);
-	current_block_number = get_ith_datablock_number(inod, block_num_pos);
+	current_block_number = get_ith_datablock_number(&inod, block_num_pos);
 	db = NULL;
 
 	read_bytes = 0;
@@ -360,13 +358,13 @@ ssize_t syscalls2__pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 			bytes_to_be_copied = min(BLOCK_SIZE, remaining_bytes);
 		}
 
-		if (block_num_pos == inod->num_blocks) {
-			if ((inod->num_used_bytes_in_last_block == current_offset_in_block) && remaining_bytes > 0) {
+		if (block_num_pos == inod.num_blocks) {
+			if ((inod.num_used_bytes_in_last_block == current_offset_in_block) && remaining_bytes > 0) {
 				// We have reached the end of the file and there are still some bytes to be read
-				fde->byte_offset = get_size_of_file(inod->num_blocks, inod->num_used_bytes_in_last_block);
+				fde->byte_offset = get_size_of_file(inod.num_blocks, inod.num_used_bytes_in_last_block);
 				return read_bytes;
 			}
-			bytes_to_be_copied = min(bytes_to_be_copied, inod->num_used_bytes_in_last_block - current_offset_in_block);
+			bytes_to_be_copied = min(bytes_to_be_copied, inod.num_used_bytes_in_last_block - current_offset_in_block);
 		}
 
 		if (current_block_number == 0) {
@@ -387,7 +385,7 @@ ssize_t syscalls2__pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 		if (current_offset_in_block == 0) {
 			// We need to read the next datablock cause we have reached the end of a block in this read step
 			block_num_pos++;
-			current_block_number = get_ith_datablock_number(inod, block_num_pos);
+			current_block_number = get_ith_datablock_number(&inod, block_num_pos);
 
 			if (db != NULL) {
 				free(db);
@@ -399,14 +397,13 @@ ssize_t syscalls2__pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 	if (db != NULL) {
 		free(db);
 	}
-	free(inod);
 	fde->byte_offset = offset + read_bytes;
 	return read_bytes;
 }
 
 ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offset) {
 	struct file_descriptor_entry * fde;
-	struct inode * inod;
+	struct inode inod;
 	struct data_block * db;
 	int pid;
 	size_t remaining_bytes, bytes_to_be_copied, written_bytes;
@@ -426,17 +423,17 @@ ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offse
 		return -1;
 	}
 
-	inod = get_inode(fde->inode_number);
+	get_inode(fde->inode_number, &inod);
 	block_num_pos = convert_byte_offset_to_ith_datablock(offset);
 
-	if (offset >= get_size_of_file(inod->num_blocks, inod->num_used_bytes_in_last_block) && !is_ith_block_in_range_of_direct_and_indirect_blocks(block_num_pos)) {
+	if (offset >= get_size_of_file(inod.num_blocks, inod.num_used_bytes_in_last_block) && !is_ith_block_in_range_of_direct_and_indirect_blocks(block_num_pos)) {
 		// request to write at position bigger than size of file
 		// AND We cannot allocate and write in a block that is not in the range of direct/indirect blocks
 		errno = EFBIG;
 		return -1;
 	}
 
-	current_block_number = get_ith_datablock_number(inod, block_num_pos);
+	current_block_number = get_ith_datablock_number(&inod, block_num_pos);
 
 	remaining_bytes = nbyte;
 	current_offset_in_block = offset % BLOCK_SIZE;
@@ -449,7 +446,7 @@ ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offse
 		if (current_block_number == 0) {
 			// if datablock is not allocated
 			db = data_block_alloc();
-			set_ith_datablock_number(inod, block_num_pos, db->data_block_id);
+			set_ith_datablock_number(&inod, block_num_pos, db->data_block_id);
 		}
 		else {
 			db = bread(current_block_number);
@@ -466,28 +463,27 @@ ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offse
 		if (current_offset_in_block == 0) {
 			// current_offset_in_block = 0;
 			block_num_pos++;
-			current_block_number = get_ith_datablock_number(inod, block_num_pos);
+			current_block_number = get_ith_datablock_number(&inod, block_num_pos);
 		}
 		free(db);
 	}
 
 	// Update the inode for the number of blocks used and position of last byte in file
-	if ((block_num_pos > inod->num_blocks) || (block_num_pos == inod->num_blocks && current_offset_in_block > inod->num_used_bytes_in_last_block)) {
+	if ((block_num_pos > inod.num_blocks) || (block_num_pos == inod.num_blocks && current_offset_in_block > inod.num_used_bytes_in_last_block)) {
 		if (current_offset_in_block == 0) {
-			inod->num_blocks = block_num_pos - 1;
-			inod->num_used_bytes_in_last_block = BLOCK_SIZE;
+			inod.num_blocks = block_num_pos - 1;
+			inod.num_used_bytes_in_last_block = BLOCK_SIZE;
 		}
 		else {
-			inod->num_blocks = block_num_pos;
-			inod->num_used_bytes_in_last_block = current_offset_in_block;
+			inod.num_blocks = block_num_pos;
+			inod.num_used_bytes_in_last_block = current_offset_in_block;
 		}
-		inod->last_modified_inode = time(NULL);
+		inod.last_modified_inode = time(NULL);
 	}
 
-	inod->last_modified_file = time(NULL);
-	put_inode(inod);
+	inod.last_modified_file = time(NULL);
+	put_inode(&inod);
 
-	free(inod);
 	fde->byte_offset = offset + written_bytes;
 	return written_bytes;
 }

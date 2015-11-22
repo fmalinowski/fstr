@@ -25,7 +25,8 @@ TEST_TEAR_DOWN(TestBlockUtils) {
 }
 
 TEST(TestBlockUtils, traverse_complete_block_list) {
-	struct inode *inode = ialloc();
+	struct inode inode;
+	ialloc(&inode);
 
 	big_int total_blocks = NUM_DIRECT_BLOCKS;
 	total_blocks += BLOCK_ID_LIST_LENGTH;
@@ -37,14 +38,14 @@ TEST(TestBlockUtils, traverse_complete_block_list) {
 	// Try setting all blocks
 	big_int i;
 	for(i = 0; i < total_blocks; ++i) {
-		TEST_ASSERT_EQUAL(0, set_block_id(inode, i, i+1));
+		TEST_ASSERT_EQUAL(0, set_block_id(&inode, i, i+1));
 	}
 
 	// Try reading all blocks
 	for(i = 0; i < total_blocks; ++i) {
-		TEST_ASSERT_EQUAL(i+1, get_block_id(inode, i));
+		TEST_ASSERT_EQUAL(i+1, get_block_id(&inode, i));
 	}
 
 	// Try reading something we've not set
-	TEST_ASSERT_EQUAL(0, get_block_id(inode, i));
+	TEST_ASSERT_EQUAL(0, get_block_id(&inode, i));
 }

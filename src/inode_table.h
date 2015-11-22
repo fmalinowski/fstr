@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-struct inode* get_inode(big_int inode_id);
+int get_inode(int inode_id, struct inode *inod);
 
 int put_inode(struct inode *inod);
 
