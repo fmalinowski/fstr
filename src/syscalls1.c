@@ -197,21 +197,7 @@ int syscalls1__unlink(const char *path) {
 		return -1;
 	}
 
-	struct dir_block dir_block;
-	unsigned int len = BLOCK_SIZE / NAMEI_ENTRY_SIZE;
-	big_int total_dir_blocks = parent_inode->num_blocks;
-	unsigned int i;
-	for(i = 0; i < total_dir_blocks; ++i) {
-		big_int block_id = get_block_id(parent_inode, i);
-		if(block_id > 0 && read_block(block_id, &dir_block) == 0) {
-			if(remove_entry_from_dir_block(&dir_block, inode->inode_id) == 0) {
-				write_block(block_id, &dir_block, sizeof(struct dir_block));
-				break;
-			}
-		}
-	}
-
-	if(i == len) {
+	if(remove_entry_from_parent(parent_inode, inode->inode_id) == -1) {
 		fprintf(stderr, "failed to remove entry from parent inode\n");
 		return -1;
 	}
@@ -274,18 +260,7 @@ int syscalls1__rmdir(const char *path) {
 		return -1;
 	}
 
-	total_dir_blocks = parent_inode->num_blocks;
-	for(i = 0; i < total_dir_blocks; ++i) {
-		big_int block_id = get_block_id(parent_inode, i);
-		if(block_id > 0 && read_block(block_id, &dir_block) == 0) {
-			if(remove_entry_from_dir_block(&dir_block, inode->inode_id) == 0) {
-				write_block(block_id, &dir_block, sizeof(struct dir_block));
-				break;
-			}
-		}
-	}
-
-	if(i == len) {
+	if(remove_entry_from_parent(parent_inode, inode->inode_id) == -1) {
 		fprintf(stderr, "failed to remove entry from parent inode\n");
 		return -1;
 	}
@@ -365,4 +340,77 @@ int syscalls1__chown(const char *path, uid_t uid, gid_t gid) {
 	inode->uid = uid;
 	inode->gid = gid;
 	return put_inode(inode);
+}
+
+int syscalls1__rename(const char *oldpath, const char *newpath) {
+
+	// Check for name lengths
+	char *old_name = basename(strdup(oldpath));
+	char *new_name = basename(strdup(newpath));
+	size_t max_name_length = NAMEI_ENTRY_SIZE - sizeof(int) - 1;
+	if(strlen(old_name) > max_name_length || strlen(new_name) > max_name_length) {
+		fprintf(stderr, "file name too long\n");
+		errno = ENAMETOOLONG;
+		return -1;
+	}
+
+	struct inode *new_inode = get_inode(namei(newpath));
+	// Remove file/dir at newpath
+	if(new_inode != NULL) {
+		if(new_inode->type == TYPE_DIRECTORY) {
+			if(syscalls1__rmdir(newpath) == -1) {
+				fprintf(stderr, "New directory already exists and cannot be removed\n");
+				return -1;
+			}
+		} else if(new_inode->type == TYPE_ORDINARY) {
+			if(syscalls1__unlink(newpath) == -1) {
+				fprintf(stderr, "New file already exists and cannot be removed\n");
+				return -1;
+			}
+		} else {
+			fprintf(stderr, "New path is not supported\n");
+			return -1;
+		}
+
+		// Free the inode and associated blocks
+		new_inode->links_nb = 0;
+		put_inode(new_inode);
+		new_inode = NULL;
+	}
+
+	struct inode *new_parent_inode = get_inode(get_parent_inode_id(newpath));
+	if(new_parent_inode == NULL) {
+		fprintf(stderr, "failed to get parent inode of newpath\n");
+		errno = ENOENT;
+		return -1;
+	}
+
+	struct inode *old_inode = get_inode(namei(oldpath));
+	if(old_inode == NULL) {
+		fprintf(stderr, "failed to get inode for oldpath\n");
+		errno = ENOENT;
+		return -1;
+	}
+
+	struct inode *old_parent_inode = get_inode(get_parent_inode_id(oldpath));
+	if(old_parent_inode == NULL) {
+		fprintf(stderr, "failed to get parent inode of oldpath\n");
+		errno = ENOENT;
+		return -1;
+	}
+
+	// Add entry to new parent inode
+	if(add_entry_to_parent(new_parent_inode, old_inode->inode_id, new_name) == -1) {
+		fprintf(stderr, "failed to add entry to new parent inode\n");
+		return -1;
+	}
+	put_inode(new_parent_inode);
+
+	// Remove entry from old parent inode
+	if(remove_entry_from_parent(old_parent_inode, old_inode->inode_id) == -1) {
+		fprintf(stderr, "failed to remove inode entry from old parent inode\n");
+		return -1;
+	}
+
+	return put_inode(old_parent_inode);
 }
