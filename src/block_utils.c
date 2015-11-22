@@ -111,6 +111,7 @@ int set_double_indirect_block_id(big_int double_indirect_block_id, big_int index
 				return -1;
 			}
 			double_indirect_block.list[bucket] = data_block->data_block_id;
+			free(data_block);
 			write_block(double_indirect_block_id, &double_indirect_block, sizeof(struct block_id_list));
 		}
 		return set_single_indirect_block_id(double_indirect_block.list[bucket], offset, block_id);
@@ -138,6 +139,7 @@ int set_triple_indirect_block_id(big_int triple_indirect_block_id, big_int index
 				return -1;
 			}
 			triple_indirect_block.list[bucket] = data_block->data_block_id;
+			free(data_block);
 			write_block(triple_indirect_block_id, &triple_indirect_block, sizeof(struct block_id_list));
 		}
 		return set_double_indirect_block_id(triple_indirect_block.list[bucket], offset, block_id);
@@ -163,6 +165,7 @@ int set_block_id(struct inode *inode, big_int index, big_int block_id) {
 				return -1;
 			}
 			inode->single_indirect_block = data_block->data_block_id;
+			free(data_block);
 		}
 		return set_single_indirect_block_id(inode->single_indirect_block, index, block_id);
 	}
@@ -178,6 +181,7 @@ int set_block_id(struct inode *inode, big_int index, big_int block_id) {
 				return -1;
 			}
 			inode->double_indirect_block = data_block->data_block_id;
+			free(data_block);
 		}
 		return set_double_indirect_block_id(inode->double_indirect_block, index, block_id);
 	}
@@ -193,6 +197,7 @@ int set_block_id(struct inode *inode, big_int index, big_int block_id) {
 				return -1;
 			}
 			inode->triple_indirect_block = data_block->data_block_id;
+			free(data_block);
 		}
 		return set_triple_indirect_block_id(inode->triple_indirect_block, index, block_id);
 	}
