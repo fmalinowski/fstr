@@ -3,7 +3,7 @@
 
 #include "common.h"
 #include "disk_emulator.h"
-#include "inodes_handler.h"
+#include "inode_table.h"
 #include "mkfs.h"
 #include "namei.h"
 
@@ -25,24 +25,18 @@ TEST_TEAR_DOWN(TestNameI) {
 }
 
 TEST(TestNameI, test_iput_writes_to_root_directory_correctly){
-	struct inode root_inode = {
-		.inode_id = ROOT_INODE_NUMBER,
-		.type = TYPE_DIRECTORY,
-		.links_nb = 1
-	};
-	add_entry_to_parent(&root_inode, ROOT_INODE_NUMBER, ".");
-	add_entry_to_parent(&root_inode, ROOT_INODE_NUMBER, "..");
-	iput(&root_inode);
+	struct inode root_inode;
+	get_inode(ROOT_INODE_NUMBER, &root_inode);
 
 	struct inode file_inode = {
 		.inode_id = 500,
 		.type = TYPE_ORDINARY,
 		.links_nb = 1
 	};
-	iput(&file_inode);
+	put_inode(&file_inode);
 
 	add_entry_to_parent(&root_inode, file_inode.inode_id, "test");
-	iput(&root_inode);
+	put_inode(&root_inode);
  	
 	TEST_ASSERT_EQUAL(file_inode.inode_id, namei("/test"));
 }

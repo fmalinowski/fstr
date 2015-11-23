@@ -1,6 +1,7 @@
 #include "disk_emulator.h"
 #include "mkfs.h"
 #include "common.h"
+#include "inode_table.h"
 // in memory emulation of file system
 // #define IN_MEMORY_FS
 
@@ -36,6 +37,7 @@ void free_disk_emulator(void) { // just for in memory simulation; substitue code
 		}
 		free(block_data);
 		block_data = NULL;
+		purge_inode_table();
 	}
 }
 
@@ -86,6 +88,7 @@ void free_disk_emulator(void){
 	if(disk_created == 0 && close(disk_store) == 0){
     	disk_created = -1;
   		LOGD("FREE_DISK_EMULATOR: Disk successfully closed.");  	
+  		purge_inode_table();
   	}
   	else{
   		LOGD("FREE_DISK_EMULATOR: Did not close disk.");
