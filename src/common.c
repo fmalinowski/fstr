@@ -136,6 +136,9 @@ int get_parent_inode_id(const char *path) {
 	if(strcmp(PATH_DELIMITER, path) == 0) {
 		return ROOT_INODE_NUMBER;
 	}
-	char *dir = dirname(strdup(path));
-	return namei(dir);
+	char *dup_path = strdup(path);
+	char *dir = dirname(dup_path);
+	int inode_id = namei(dir);
+	free(dup_path);
+	return inode_id;
 }

@@ -1,6 +1,6 @@
 #include "common.h"
 #include "disk_emulator.h"
-#include "inodes_handler.h"
+#include "inode_table.h"
 #include "block_utils.h"
 #include "namei.h"
 
@@ -26,9 +26,10 @@ int namei(const char *path) {
 		return -1;
 	}
 
-	char *next_file = strtok(strdup(path), PATH_DELIMITER);
+	char *dup_path = strdup(path);
+	char *next_file = strtok(dup_path, PATH_DELIMITER);
 	struct inode next_inode;
-	int next_inode_success = iget(ROOT_INODE_NUMBER, &next_inode);
+	int next_inode_success = get_inode(ROOT_INODE_NUMBER, &next_inode);
 	struct dir_block dir_block;
 	big_int block_id;
 
@@ -47,13 +48,15 @@ int namei(const char *path) {
 		}
 
 		if(next_inode_number == -1) {
+			free(dup_path);
 			return -1;
 		}
 
 		next_file = strtok(NULL, PATH_DELIMITER);
-		next_inode_success = iget(next_inode_number, &next_inode);
+		next_inode_success = get_inode(next_inode_number, &next_inode);
 	}
 
+	free(dup_path);
 	if(next_inode_success == -1){
 		fprintf(stderr, "iget returned -1, exiting namei..\n");
 		return -1;

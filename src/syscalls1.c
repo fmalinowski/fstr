@@ -17,11 +17,13 @@ int syscalls1__mkdir(const char *path, mode_t mode) {
 	}
 
 	// Check for name length
-	char *name = basename(strdup(path));
+	char *dup_path = strdup(path);
+	char *name = basename(dup_path);
 	size_t max_name_length = NAMEI_ENTRY_SIZE - sizeof(int) - 1;
 	if(strlen(name) > max_name_length) {
 		fprintf(stderr, "file name too long\n");
 		errno = ENAMETOOLONG;
+		free(dup_path);
 		return -1;
 	}
 
@@ -30,6 +32,7 @@ int syscalls1__mkdir(const char *path, mode_t mode) {
 	if(get_inode(get_parent_inode_id(path), &parent_inode) == -1) {
 		fprintf(stderr, "failed to get parent inode id\n");
 		errno = ENOENT;
+		free(dup_path);
 		return -1;
 	}
 
@@ -38,6 +41,7 @@ int syscalls1__mkdir(const char *path, mode_t mode) {
 	if(data_block_alloc(&block) == -1) {
 		fprintf(stderr, "could not find a free data block\n");
 		errno = EDQUOT;
+		free(dup_path);
 		return -1;
 	}
 
@@ -46,6 +50,7 @@ int syscalls1__mkdir(const char *path, mode_t mode) {
 	if(ialloc(&inode) == -1) {
 		fprintf(stderr, "could not find a free inode\n");
 		errno = EDQUOT;
+		free(dup_path);
 		return -1;
 	}
 	inode.type = TYPE_DIRECTORY;
@@ -59,6 +64,7 @@ int syscalls1__mkdir(const char *path, mode_t mode) {
 	struct dir_block dir_block;
 	if(init_dir_block(&dir_block, inode.inode_id, parent_inode.inode_id) == -1) {
 		fprintf(stderr, "failed to format a dir block\n");
+		free(dup_path);
 		return -1;
 	}
 
@@ -68,6 +74,7 @@ int syscalls1__mkdir(const char *path, mode_t mode) {
 	// Update the new inode with new dir block mapping
 	if(set_block_id(&inode, 0, block_id) == -1) {
 		fprintf(stderr, "failed to set data block in inode\n");
+		free(dup_path);
 		return -1;
 	}
 
@@ -78,9 +85,11 @@ int syscalls1__mkdir(const char *path, mode_t mode) {
 	// Add new entry in parent inode
 	if(add_entry_to_parent(&parent_inode, inode.inode_id, name) == -1) {
 		fprintf(stderr, "Failed to add entry to parent dir block\n");
+		free(dup_path);
 		return -1;
 	}
 
+	free(dup_path);
 	return put_inode(&parent_inode);;
 }
 
@@ -96,11 +105,13 @@ int syscalls1__mknod(const char *path, mode_t mode, dev_t dev) {
 	}
 
 	// Check for name length
-	char *name = basename(strdup(path));
+	char *dup_path = strdup(path);
+	char *name = basename(dup_path);
 	size_t max_name_length = NAMEI_ENTRY_SIZE - sizeof(int) - 1;
 	if(strlen(name) > max_name_length) {
 		fprintf(stderr, "file name too long\n");
 		errno = ENAMETOOLONG;
+		free(dup_path);
 		return -1;
 	}
 
@@ -109,6 +120,7 @@ int syscalls1__mknod(const char *path, mode_t mode, dev_t dev) {
 	if(get_inode(get_parent_inode_id(path), &parent_inode) == -1) {
 		fprintf(stderr, "failed to get parent inode\n");
 		errno = ENOENT;
+		free(dup_path);
 		return -1;
 	}
 
@@ -117,6 +129,7 @@ int syscalls1__mknod(const char *path, mode_t mode, dev_t dev) {
 	if(ialloc(&inode) == -1) {
 		fprintf(stderr, "could not find a free inode\n");
 		errno = EDQUOT;
+		free(dup_path);
 		return -1;
 	}
 	inode.type = TYPE_ORDINARY;
@@ -131,9 +144,11 @@ int syscalls1__mknod(const char *path, mode_t mode, dev_t dev) {
 	// Add new entry in parent inode
 	if(add_entry_to_parent(&parent_inode, inode.inode_id, name) == -1) {
 		fprintf(stderr, "failed to add entry to parent inode\n");
+		free(dup_path);
 		return -1;
 	}
 
+	free(dup_path);
 	return put_inode(&parent_inode);;
 }
 
@@ -158,7 +173,9 @@ int syscalls1__readdir(const char *path, void *buffer, fuse_fill_dir_t filler, o
 		if(block_id > 0 && read_block(block_id, &dir_block) == 0) {
 			for(j = 0; j < len; ++j) {
 				if(dir_block.inode_ids[j] != 0) {
-					struct stat stat;
+					struct stat stat = {
+						.st_dev = 0
+					};
 					stat.st_ino = dir_block.inode_ids[j];
 					filler(buffer, dir_block.names[j], &stat, 0);
 				}
@@ -345,12 +362,16 @@ int syscalls1__chown(const char *path, uid_t uid, gid_t gid) {
 int syscalls1__rename(const char *oldpath, const char *newpath) {
 
 	// Check for name lengths
-	char *old_name = basename(strdup(oldpath));
-	char *new_name = basename(strdup(newpath));
+	char *dup_old_path = strdup(oldpath);
+	char *old_name = basename(dup_old_path);
+	char *dup_new_path = strdup(newpath);
+	char *new_name = basename(dup_new_path);
 	size_t max_name_length = NAMEI_ENTRY_SIZE - sizeof(int) - 1;
 	if(strlen(old_name) > max_name_length || strlen(new_name) > max_name_length) {
 		fprintf(stderr, "file name too long\n");
 		errno = ENAMETOOLONG;
+		free(dup_old_path);
+		free(dup_new_path);
 		return -1;
 	}
 
@@ -360,15 +381,21 @@ int syscalls1__rename(const char *oldpath, const char *newpath) {
 		if(new_inode.type == TYPE_DIRECTORY) {
 			if(syscalls1__rmdir(newpath) == -1) {
 				fprintf(stderr, "New directory already exists and cannot be removed\n");
+				free(dup_old_path);
+				free(dup_new_path);
 				return -1;
 			}
 		} else if(new_inode.type == TYPE_ORDINARY) {
 			if(syscalls1__unlink(newpath) == -1) {
 				fprintf(stderr, "New file already exists and cannot be removed\n");
+				free(dup_old_path);
+				free(dup_new_path);
 				return -1;
 			}
 		} else {
 			fprintf(stderr, "New path is not supported\n");
+			free(dup_old_path);
+			free(dup_new_path);
 			return -1;
 		}
 
@@ -381,6 +408,8 @@ int syscalls1__rename(const char *oldpath, const char *newpath) {
 	if(get_inode(get_parent_inode_id(newpath), &new_parent_inode) == -1) {
 		fprintf(stderr, "failed to get parent inode of newpath\n");
 		errno = ENOENT;
+		free(dup_old_path);
+		free(dup_new_path);
 		return -1;
 	}
 
@@ -388,6 +417,8 @@ int syscalls1__rename(const char *oldpath, const char *newpath) {
 	if(get_inode(namei(oldpath), &old_inode) == -1) {
 		fprintf(stderr, "failed to get inode for oldpath\n");
 		errno = ENOENT;
+		free(dup_old_path);
+		free(dup_new_path);
 		return -1;
 	}
 
@@ -395,12 +426,16 @@ int syscalls1__rename(const char *oldpath, const char *newpath) {
 	if(get_inode(get_parent_inode_id(oldpath), &old_parent_inode) == -1) {
 		fprintf(stderr, "failed to get parent inode of oldpath\n");
 		errno = ENOENT;
+		free(dup_old_path);
+		free(dup_new_path);
 		return -1;
 	}
 
 	// Add entry to new parent inode
 	if(add_entry_to_parent(&new_parent_inode, old_inode.inode_id, new_name) == -1) {
 		fprintf(stderr, "failed to add entry to new parent inode\n");
+		free(dup_old_path);
+		free(dup_new_path);
 		return -1;
 	}
 	put_inode(&new_parent_inode);
@@ -408,8 +443,12 @@ int syscalls1__rename(const char *oldpath, const char *newpath) {
 	// Remove entry from old parent inode
 	if(remove_entry_from_parent(&old_parent_inode, old_inode.inode_id) == -1) {
 		fprintf(stderr, "failed to remove inode entry from old parent inode\n");
+		free(dup_old_path);
+		free(dup_new_path);
 		return -1;
 	}
 
+	free(dup_old_path);
+	free(dup_new_path);
 	return put_inode(&old_parent_inode);
 }
