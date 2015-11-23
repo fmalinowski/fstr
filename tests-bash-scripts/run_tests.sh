@@ -1,48 +1,59 @@
 #!/bin/bash
 
-# MOUNT_POINT="/tmp/fuse_bash_tests/"
+MOUNT_POINT="/tmp/fuse_tests"
 MAKE_FOLDER_OF_FSTR="../src/"
 BIN_FOLDER_OF_FSTR="../bin/"
-MOUNT_POINT_RELATIVE_TO_BIN_FOLDER="./fuse_tests"
 
 bash_tests_path=$(pwd)
-mount_point_path="$(pwd)/$BIN_FOLDER_OF_FSTR$MOUNT_POINT_RELATIVE_TO_BIN_FOLDER"
 
+sudo fusermount -u $MOUNT_POINT &> /dev/null
+sudo rm -rf $MOUNT_POINT
+
+# Compile FSTR and MKFS
 cd $MAKE_FOLDER_OF_FSTR
-make
-cd $bash_tests_path
+sudo make
+sudo make mkfs
 
-sudo fusermount -u $mount_point_path &> /dev/null
-sudo rm -rf $mount_point_path
+# Create the mount point
+sudo rm -rf $MOUNT_POINT
+sudo mkdir $MOUNT_POINT
 
 echo
 echo
 echo "RUNNING ALL BASH SCRIPT TESTS"
+
+# Get test files
+cd $bash_tests_path
 test_files=$(ls | grep test_)
 
 for filename in $test_files
 do
-	mkdir $mount_point_path
-
+	# MKFS
 	cd $BIN_FOLDER_OF_FSTR
-	sudo ./fstr $MOUNT_POINT_RELATIVE_TO_BIN_FOLDER
-	cd $bash_tests_path
+	sudo ./mkfs &> /dev/null
 
+	# Mount the disk
+	sudo ./fstr $MOUNT_POINT
+	
+	# Execute permissions for the test script
+	cd $bash_tests_path
 	chmod u+x $filename
 	echo -n "TEST - $filename "
 
 	# go to mount point
-	cd $mount_point_path
+	cd $MOUNT_POINT
 
 	path_of_test_file="$bash_tests_path/$filename"
 	#Execute test script
-	sudo $path_of_test_file $mount_point_path
+	sudo $path_of_test_file $MOUNT_POINT
 
 	result_code=$?
 
 	cd $bash_tests_path
-	sudo fusermount -u $mount_point_path
-	sudo rm -rf $mount_point_path
+
+	# Unmount FSTR and delete mount point
+	sudo fusermount -u $MOUNT_POINT
+	sudo rm -rf $MOUNT_POINT
 
 	if [ $result_code == 0 ]
 	then
@@ -52,6 +63,7 @@ do
 		exit 1
 	fi
 done
+
 
 echo
 echo "-----------------"
