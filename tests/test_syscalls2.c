@@ -16,6 +16,7 @@ TEST_GROUP_RUNNER(TestSyscalls2) {
 	RUN_TEST_CASE(TestSyscalls2, find_available_fd);
 	RUN_TEST_CASE(TestSyscalls2, allocate_file_descriptor_entry);
 	RUN_TEST_CASE(TestSyscalls2, allocate_file_descriptor_entry__when_table_is_full);
+	RUN_TEST_CASE(TestSyscalls2, allocate_file_descriptor_entry__30_times);
 	RUN_TEST_CASE(TestSyscalls2, get_file_descriptor_entry);
 	RUN_TEST_CASE(TestSyscalls2, delete_file_descriptor_entry);
 	RUN_TEST_CASE(TestSyscalls2, syscall2__get_pid);
@@ -159,6 +160,32 @@ TEST(TestSyscalls2, allocate_file_descriptor_entry__when_table_is_full) {
 
 	// Make sure previous file descriptor entries are intact
 	TEST_ASSERT_EQUAL(3, entry->fd);
+
+	delete_file_descriptor_table(1632);
+}
+
+TEST(TestSyscalls2, allocate_file_descriptor_entry__30_times) {
+	struct file_descriptor_table *table;
+	struct file_descriptor_entry *initial_entry, *entry;
+	int i, expected_total_descriptors;
+	
+	initial_entry = allocate_file_descriptor_entry(1632);
+	table = get_file_descriptor_table(1632);
+
+	expected_total_descriptors = 8;
+
+	for (i = 4; i < 64; i++) {
+		entry = allocate_file_descriptor_entry(1632);
+		TEST_ASSERT_EQUAL(i, entry->fd);
+
+		if (i % expected_total_descriptors == 0) {
+			TEST_ASSERT_EQUAL(expected_total_descriptors * 2, table->total_descriptors);
+			expected_total_descriptors *= 2;
+		}
+	}
+
+	// Make sure previous file descriptor entries are intact
+	TEST_ASSERT_EQUAL(3, initial_entry->fd);
 
 	delete_file_descriptor_table(1632);
 }
