@@ -37,6 +37,7 @@ TEST_GROUP_RUNNER(TestSyscalls2) {
 	RUN_TEST_CASE(TestSyscalls2, read__more_bytes_to_read_than_available_in_file);
 	RUN_TEST_CASE(TestSyscalls2, pwrite__write_after_end_of_file);
 	RUN_TEST_CASE(TestSyscalls2, pwrite__write_in_a_block_that_was_already_written);
+	RUN_TEST_CASE(TestSyscalls2, batch_open_close);
 }
 
 
@@ -1100,6 +1101,27 @@ TEST(TestSyscalls2, pwrite__write_in_a_block_that_was_already_written) {
 	TEST_ASSERT_EQUAL(0, buffer2[BLOCK_SIZE + 15]);
 
 	syscalls2__close(fd2);
+
+	free_disk_emulator();
+}
+
+TEST(TestSyscalls2, batch_open_close) {
+	init_disk_emulator();
+	create_fs();
+
+	int total = 1000;
+	char buffer[10];
+	const char *file = "/file%d";
+	
+	int i;
+	for(i = 0; i < total; ++i) {
+		sprintf(buffer, file, i);
+		TEST_ASSERT_TRUE(syscalls2__open(file, O_CREAT | O_RDWR) > 2);
+	}
+
+	for(i = 3; i < total + 3; ++i) {
+		TEST_ASSERT_EQUAL(0, syscalls2__close(i));
+	}
 
 	free_disk_emulator();
 }

@@ -47,7 +47,6 @@ int namei(const char *path) {
 		}
 
 		if(next_inode_number == -1) {
-			fprintf(stderr, "Next file entry not found in current directory\n");
 			return -1;
 		}
 
