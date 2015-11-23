@@ -121,6 +121,11 @@ struct file_descriptor_entry * allocate_file_descriptor_entry(int pid) {
 		available_fd = table->total_descriptors;
 		table->entries = realloc(table->entries, ((table->total_descriptors) * 2 * sizeof(struct file_descriptor_entry)));
 		table->total_descriptors = table->total_descriptors * 2;
+
+		int i;
+		for (i = available_fd; i < table->total_descriptors; i++) {
+    		table->entries[i].fd = FD_NOT_USED;
+    	}
 	}
 	entry = &table->entries[available_fd];
 	entry->fd = available_fd;
