@@ -26,6 +26,7 @@ TEST_GROUP_RUNNER(TestSyscalls1) {
 	RUN_TEST_CASE(TestSyscalls1, syscalls1__readdir);
 	RUN_TEST_CASE(TestSyscalls1, syscalls1__unlink);
 	RUN_TEST_CASE(TestSyscalls1, random_create_remove_files_dir);
+	RUN_TEST_CASE(TestSyscalls1, batch_mkdir_mknod_rmdir_unlink);
 }
 
 TEST_GROUP(TestSyscalls1);
@@ -117,4 +118,28 @@ TEST(TestSyscalls1, random_create_remove_files_dir) {
 
 	// remove newfile2
 	TEST_ASSERT_EQUAL(0, syscalls1__unlink("/newfile2"));
+}
+
+TEST(TestSyscalls1, batch_mkdir_mknod_rmdir_unlink) {
+	int total = 1000;
+	char buffer[10];
+	const char *folder = "/folder%d";
+	const char *file = "/file%d";
+	
+	int i;
+	for(i = 0; i < total; ++i) {
+		sprintf(buffer, folder, i);
+		TEST_ASSERT_EQUAL(0, syscalls1__mkdir(buffer, 0));
+
+		sprintf(buffer, file, i);
+		TEST_ASSERT_EQUAL(0, syscalls1__mknod(buffer, 0, 0));
+	}
+
+	for(i = 0; i < total; ++i) {
+		sprintf(buffer, folder, i);
+		TEST_ASSERT_EQUAL(0, syscalls1__rmdir(buffer));
+
+		sprintf(buffer, file, i);
+		TEST_ASSERT_EQUAL(0, syscalls1__unlink(buffer));
+	}
 }
