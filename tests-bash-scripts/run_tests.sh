@@ -32,6 +32,11 @@ do
 	cd $BIN_FOLDER_OF_FSTR
 	sudo ./mkfs &> /dev/null
 
+	# Create the mount point
+	sudo fusermount -u $MOUNT_POINT
+	sudo rm -rf $MOUNT_POINT
+	sudo mkdir $MOUNT_POINT
+
 	# Mount the disk
 	sudo ./fstr $MOUNT_POINT
 	
@@ -52,15 +57,15 @@ do
 	cd $bash_tests_path
 
 	# Unmount FSTR and delete mount point
-	sudo fusermount -u $MOUNT_POINT
-	sudo rm -rf $MOUNT_POINT
+	#sudo fusermount -u $MOUNT_POINT
+	#sudo rm -rf $MOUNT_POINT
 
 	if [ $result_code == 0 ]
 	then
 		echo "PASS"
 	else
 		echo " FAILED"
-		exit 1
+		exit $result_code
 	fi
 done
 
