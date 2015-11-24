@@ -1,0 +1,43 @@
+#!/bin/bash
+
+NUMBER_OF_FOLDERS=100
+MOUNT_POINT=$1
+
+# WE DON'T NEED TO GO TO THE MOUNT POINT FOLDER AS THE RUN_TESTS SCRIPT DOES THAT FOR US
+mkdir -p folder1
+cd folder1
+
+
+# Create recursive folders
+for ((i=1; i<=$NUMBER_OF_FOLDERS; i++))
+do
+	mkdir $i
+	touch $i.txt
+	echo $i >> $i.txt
+	cd $i
+done
+
+#go back to root, while writing in files
+for ((i=$NUMBER_OF_FOLDERS; i >= 1; i--))
+do
+	echo "exiting $i" >> $i.txt
+	cd ..
+done
+
+#check each file for consistency
+for ((i=1; i<=$NUMBER_OF_FOLDERS; i++))
+do
+	cd $i
+	file_content=$(cat $i.txt)	
+	if [ "$file_content" != "exiting $i" ]
+	then
+		echo "ERROR: File content corrupted" >&2
+		exit 3
+	fi
+done
+
+cd $MOUNT_POINT
+rm -rf *
+exit 0
+
+
