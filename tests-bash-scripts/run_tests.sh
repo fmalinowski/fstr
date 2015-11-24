@@ -68,6 +68,9 @@ do
 		exit $result_code
 	fi
 done
+# Unmount FSTR and delete mount point
+sudo fusermount -u $MOUNT_POINT
+sudo rm -rf $MOUNT_POINT
 
 
 echo
