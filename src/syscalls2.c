@@ -302,7 +302,9 @@ big_int get_ith_datablock_number(struct inode * inod, big_int ith_block) {
 // If the indirect blocks do no exist (block number = 0), we allocate them on the fly
 // We save the inode and the new block number on disk
 int set_ith_datablock_number(struct inode * inod, big_int ith_block, big_int block_number) {
-	set_block_id(inod, ith_block - 1, block_number); // Make sure we free correctly datablocks in those functions
+	if (set_block_id(inod, ith_block - 1, block_number) == -1) {
+		return -1;
+	}
 
 	// If we allocated a datablock that is beyond the end of the file, then we need to update the inode
 	if (inod->num_blocks < ith_block) {
@@ -340,10 +342,12 @@ ssize_t syscalls2__pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 		return -1;
 	}
 
-	get_inode(fde->inode_number, &inod);
+	if (get_inode(fde->inode_number, &inod) == -1) {
+		errno = EIO;
+		return -1;
+	}
 
 	if (offset >= get_size_of_file(inod.num_blocks, inod.num_used_bytes_in_last_block)) {
-		errno = EINVAL;
 		return 0; // request to read at position bigger than size of file
 	}
 
@@ -376,7 +380,10 @@ ssize_t syscalls2__pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 			memset(&((char *)buf)[read_bytes], 0, bytes_to_be_copied);
 		}
 		else {
-			bread(current_block_number, &db);
+			if (bread(current_block_number, &db) == -1) {
+				errno = EIO;
+				return -1;
+			}
 			memcpy(&((char *)buf)[read_bytes], &db.block[current_offset_in_block], bytes_to_be_copied);
 		}
 
@@ -441,15 +448,27 @@ ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offse
 
 		if (current_block_number == 0) {
 			// if datablock is not allocated
-			data_block_alloc(&db);
-			set_ith_datablock_number(&inod, block_num_pos, db.data_block_id);
+			if (data_block_alloc(&db) == -1) {
+				errno = EDQUOT;
+				return -1;
+			}
+			if (set_ith_datablock_number(&inod, block_num_pos, db.data_block_id) == -1) {
+				errno = EIO;
+				return -1;
+			}
 		}
 		else {
-			bread(current_block_number, &db);
+			if (bread(current_block_number, &db) == -1) {
+				errno = EIO;
+				return -1;
+			}
 		}
 
 		memcpy(&db.block[current_offset_in_block], &((char *)buf)[written_bytes], bytes_to_be_copied);
-		bwrite(&db);
+		if (bwrite(&db) == -1) {
+			errno = EIO;
+			return -1;
+		}
 		written_bytes += bytes_to_be_copied;
 
 		current_offset_in_block = (current_offset_in_block + bytes_to_be_copied) % BLOCK_SIZE;
@@ -477,7 +496,11 @@ ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offse
 	}
 
 	inod.last_modified_file = time(NULL);
-	put_inode(&inod);
+	
+	if (put_inode(&inod)) {
+		errno = EIO;
+		return -1;
+	}
 
 	fde->byte_offset = offset + written_bytes;
 	return written_bytes;
