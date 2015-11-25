@@ -43,7 +43,7 @@ TEST(TestDataBlocksHandler, get_block_number_of_first_datablock) {
 	// NUM_INODES = 820
 	// INODE_SIZE = 256
 
-	TEST_ASSERT_EQUAL(821, get_block_number_of_first_datablock());
+	TEST_ASSERT_EQUAL(NUM_INODE_BLOCKS + 1, get_block_number_of_first_datablock());
 }
 
 TEST(TestDataBlocksHandler, get_ith_block_number_in_datablock__returns_ID_of_datablock_placed_in_ith_position_in_datablock) {

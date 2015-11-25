@@ -91,6 +91,7 @@ struct inode {
 	big_int num_blocks; // Number of blocks that are used (if there are empty blocks before a filled block, 
 						// the empty blocks are also considered. The (num_blocks)th block can be partially filled)
 	int num_used_bytes_in_last_block; // Number of bytes used in last datablock for the file
+	big_int num_allocated_blocks;
 };
 
 struct block_id_list {

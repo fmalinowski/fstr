@@ -39,6 +39,7 @@ int iput(struct inode * inod) {
 			if(block_id > 0) {
 				data_block.data_block_id = block_id;
 				data_block_free(&data_block);
+				inod->num_allocated_blocks--;
 			}
 		}
 		

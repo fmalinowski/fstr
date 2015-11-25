@@ -307,9 +307,11 @@ int syscalls1__lstat(const char *path, struct stat *buf) {
 		buf->st_size = inode.num_blocks * BLOCK_SIZE;
 	}
 
+	buf->st_blocks = inode.num_allocated_blocks;
 	buf->st_blksize = BLOCK_SIZE;
 	buf->st_atime = inode.last_accessed_file;
-	buf->st_mtime = inode.last_modified_inode;
+	buf->st_mtime = inode.last_modified_file;
+	buf->st_ctime = inode.last_modified_inode;
 	return 0;
 }
 

@@ -6,17 +6,10 @@ BIN_FOLDER_OF_FSTR="../bin/"
 
 bash_tests_path=$(pwd)
 
-sudo fusermount -u $MOUNT_POINT &> /dev/null
-sudo rm -rf $MOUNT_POINT
-
 # Compile FSTR and MKFS
 cd $MAKE_FOLDER_OF_FSTR
 sudo make
 sudo make mkfs
-
-# Create the mount point
-sudo rm -rf $MOUNT_POINT
-sudo mkdir $MOUNT_POINT
 
 echo
 echo
@@ -33,7 +26,7 @@ do
 	sudo ./mkfs &> /dev/null
 
 	# Create the mount point
-	sudo fusermount -u $MOUNT_POINT
+	sudo fusermount -u $MOUNT_POINT &> /dev/null
 	sudo rm -rf $MOUNT_POINT
 	sudo mkdir $MOUNT_POINT
 
