@@ -40,12 +40,11 @@ TEST(TestBlockUtils, traverse_complete_block_list) {
 	for(i = 0; i < total_blocks; ++i) {
 		TEST_ASSERT_EQUAL(0, set_block_id(&inode, i, i+1));
 	}
+	TEST_ASSERT_EQUAL(-1, set_block_id(&inode, i, i+1));
 
 	// Try reading all blocks
 	for(i = 0; i < total_blocks; ++i) {
 		TEST_ASSERT_EQUAL(i+1, get_block_id(&inode, i));
 	}
-
-	// Try reading something we've not set
 	TEST_ASSERT_EQUAL(0, get_block_id(&inode, i));
 }
