@@ -66,76 +66,100 @@ int write_block(big_int block_id, void * buffer, size_t buffer_size) {
 
 static int disk_store;
 int disk_created = -1;
+
 int init_disk_emulator(void) { 
 	
 	if(disk_created == -1){
 		disk_store = open(DISK_STORE_PATH, O_RDWR);
 		if (disk_store == -1){
     		fprintf(stderr, "Error opening disk store\n");
-    		return -ENODEV; // failure
+    		errno = ENODEV;
+    		return -1; // failure
   		}
-  		LOGD("DISK_EMULATOR: File descriptor of disk: %d", disk_store);
+  		LOGD("file descriptor of disk: %d", disk_store);
 		disk_created = 0;
 		return 0; // success
 	}
-	else{
-		LOGD("DISK_EMULATOR: disk store already initialised");
-		return -1;	
-	}
+
+	LOGD("disk store already initialised");
+	return -1;
 }
 
 void free_disk_emulator(void){
-	if(disk_created == 0 && close(disk_store) == 0){
-    	disk_created = -1;
-  		LOGD("FREE_DISK_EMULATOR: Disk successfully closed.");  	
-  		purge_inode_table();
-  	}
-  	else{
-  		LOGD("FREE_DISK_EMULATOR: Did not close disk.");
-  		fprintf(stderr, "Error closing disk\n");
-    }
+
+	if(disk_created == -1) {
+		LOGD("no disk store opened");
+		return;
+	}
+
+	disk_created = -1;
+	purge_inode_table();
+	if(close(disk_store) == 0) {
+		LOGD("disk store successfully closed");
+	} else {
+		fprintf(stderr, "failed to close disk store\n");
+	}
 }
 
 int read_block(big_int block_id, void * target) {
-	if(block_id < NUM_BLOCKS){
-		if(lseek(disk_store, block_id * BLOCK_SIZE, SEEK_SET) != -1){ // seek to position of block id
-			if(read(disk_store, target, BLOCK_SIZE) == BLOCK_SIZE){
-				return 0; // read successful
-			}
-		}
+
+	if(block_id >= NUM_BLOCKS) {
+		fprintf(stderr, "cannot read block id outside range\n");
+		return -1;
 	}
-	LOGD("READ_BLOCK: block read unsuccessful");
-	return -1;
+
+	off_t seek_pos = block_id * BLOCK_SIZE;
+	if(lseek(disk_store, seek_pos, SEEK_SET) == -1) {
+		fprintf(stderr, "failed to seek to %" PRId64 " for block %" PRIu64 "\n", seek_pos, block_id);
+		return -1;
+	}
+
+	ssize_t read_bytes = read(disk_store, target, BLOCK_SIZE);
+	if(read_bytes == -1) {
+		fprintf(stderr, "failed to read block %" PRIu64 " with seek_pos %" PRId64 "\n", block_id, seek_pos);
+		return -1;
+	}
+
+	if((big_int) read_bytes != BLOCK_SIZE) {
+		fprintf(stderr, "read returned less than expected bytes (%" PRId64 ")\n", read_bytes);
+	}
+	return 0;
 }
 
 int write_block(big_int block_id, void * buffer, size_t buffer_size) {
-	if(block_id < NUM_BLOCKS){
-		if(lseek(disk_store, block_id * BLOCK_SIZE, SEEK_SET) != -1){
-			int bytes_written;
-			size_t copy_size = buffer_size < BLOCK_SIZE ? buffer_size : BLOCK_SIZE;
-			if((bytes_written = write(disk_store, buffer, copy_size)) != -1){
 
-				if(copy_size < BLOCK_SIZE){
-					void *temp = calloc(BLOCK_SIZE - copy_size, sizeof(int));
-					
-					if(temp && lseek(disk_store, (block_id * BLOCK_SIZE) + copy_size, SEEK_SET) != -1){
-						if(write(disk_store, temp, BLOCK_SIZE - copy_size) != -1){
-							free(temp);
-							return 0; // Success				
-						}
-					}
-					if(temp){
-						free(temp);
-					}
-					LOGD("something went wrong");
-					return -1;
-				}
-				return 0; // write successful	
-			}
-		}
+	if(block_id >= NUM_BLOCKS) {
+		fprintf(stderr, "cannot write block id outside range\n");
+		return -1;
 	}
-	LOGD("WRITE_BLOCK: block write unsuccessful");
-	return -1;
+
+	off_t seek_pos = block_id * BLOCK_SIZE;
+	if(lseek(disk_store, seek_pos, SEEK_SET) == -1) {
+		fprintf(stderr, "failed to seek to %" PRId64 " for block %" PRIu64 "\n", seek_pos, block_id);
+		return -1;
+	}
+
+	if(buffer_size > BLOCK_SIZE) {
+		fprintf(stderr, "not writing data beyond block size\n");
+	}
+
+	if(buffer_size < BLOCK_SIZE) {
+		char data[BLOCK_SIZE];
+		memcpy(data, buffer, buffer_size);
+		memset(data + buffer_size, 0, BLOCK_SIZE - buffer_size);
+		buffer = data;
+	}
+
+	ssize_t write_bytes = write(disk_store, buffer, BLOCK_SIZE);
+	if(write_bytes == -1) {
+		fprintf(stderr, "failed to write block %" PRIu64 " with seek_pos %" PRId64 "\n", block_id, seek_pos);
+		return -1;
+	}
+
+	if((big_int) write_bytes != BLOCK_SIZE) {
+		fprintf(stderr, "write returned less than expected bytes (%" PRId64 ")\n", write_bytes);
+	}
+	return 0;
 }
 
 #endif

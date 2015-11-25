@@ -53,7 +53,7 @@ int create_superblock(void) {
 
     LOGD("FS size: %" PRIu64, superblock.fs_size);
     LOGD("Block size: %d", BLOCK_SIZE);
-    LOGD("No. of blocks: %d", NUM_BLOCKS);
+    LOGD("No. of blocks: %" PRIu64, NUM_BLOCKS);
     LOGD("inode size: %d", INODE_SIZE);
     LOGD("No. of inodes: %d", NUM_INODES);
     LOGD("No. of inode blocks: %lu", NUM_INODE_BLOCKS);

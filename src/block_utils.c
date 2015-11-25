@@ -26,8 +26,8 @@ big_int get_double_indirect_block_id(big_int double_indirect_block_id, big_int i
 	struct block_id_list double_indirect_block;
 	if(read_block(double_indirect_block_id, &double_indirect_block) == 0) {
 
-		int bucket = index / BLOCK_ID_LIST_LENGTH;
-		int offset = index % BLOCK_ID_LIST_LENGTH;
+		big_int bucket = index / BLOCK_ID_LIST_LENGTH;
+		big_int offset = index % BLOCK_ID_LIST_LENGTH;
 		return get_single_indirect_block_id(double_indirect_block.list[bucket], offset);
 	}
 	return 0;
@@ -42,8 +42,8 @@ big_int get_triple_indirect_block_id(big_int triple_indirect_block_id, big_int i
 	struct block_id_list triple_indirect_block;
 	if(read_block(triple_indirect_block_id, &triple_indirect_block) == 0) {
 
-		int bucket = index / (BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH);
-		int offset = index % (BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH);
+		big_int bucket = index / (BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH);
+		big_int offset = index % (BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH);
 		return get_double_indirect_block_id(triple_indirect_block.list[bucket], offset);
 	}
 	return 0;
@@ -94,14 +94,14 @@ int set_single_indirect_block_id(big_int single_indirect_block_id, big_int index
 int set_double_indirect_block_id(big_int double_indirect_block_id, big_int index, big_int block_id) {
 	if(double_indirect_block_id == 0) {
 		fprintf(stderr, "double indirect block id not set\n");
-		return 0;
+		return -1;
 	}
 
 	struct block_id_list double_indirect_block;
 	if(read_block(double_indirect_block_id, &double_indirect_block) == 0) {
 
-		int bucket = index / BLOCK_ID_LIST_LENGTH;
-		int offset = index % BLOCK_ID_LIST_LENGTH;
+		big_int bucket = index / BLOCK_ID_LIST_LENGTH;
+		big_int offset = index % BLOCK_ID_LIST_LENGTH;
 
 		// Make sure we have valid block
 		if(double_indirect_block.list[bucket] == 0) {
@@ -121,14 +121,14 @@ int set_double_indirect_block_id(big_int double_indirect_block_id, big_int index
 int set_triple_indirect_block_id(big_int triple_indirect_block_id, big_int index, big_int block_id) {
 	if(triple_indirect_block_id == 0) {
 		fprintf(stderr, "triple indirect block id not set\n");
-		return 0;
+		return -1;
 	}
 
 	struct block_id_list triple_indirect_block;
 	if(read_block(triple_indirect_block_id, &triple_indirect_block) == 0) {
 
-		int bucket = index / (BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH);
-		int offset = index % (BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH);
+		big_int bucket = index / (BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH);
+		big_int offset = index % (BLOCK_ID_LIST_LENGTH * BLOCK_ID_LIST_LENGTH);
 
 		// Make sure we have valid block
 		if(triple_indirect_block.list[bucket] == 0) {
