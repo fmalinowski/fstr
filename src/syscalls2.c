@@ -388,9 +388,7 @@ ssize_t syscalls2__pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 		}
 
 		read_bytes += bytes_to_be_copied;
-		// current_offset_in_block = (current_offset_in_block + read_bytes) % BLOCK_SIZE;
 		current_offset_in_block = (current_offset_in_block + bytes_to_be_copied) % BLOCK_SIZE;
-
 		remaining_bytes -= bytes_to_be_copied;
 
 		if (current_offset_in_block == 0) {
@@ -437,7 +435,6 @@ ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offse
 	}
 
 	current_block_number = get_ith_datablock_number(&inod, block_num_pos);
-
 	remaining_bytes = nbyte;
 	current_offset_in_block = offset % BLOCK_SIZE;
 	written_bytes = 0;
@@ -446,8 +443,8 @@ ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offse
 	while (remaining_bytes > 0) {
 		bytes_to_be_copied = min(BLOCK_SIZE - current_offset_in_block, remaining_bytes);
 
+		// if datablock is not allocated
 		if (current_block_number == 0) {
-			// if datablock is not allocated
 			if (data_block_alloc(&db) == -1) {
 				errno = EDQUOT;
 				return -1;
@@ -456,6 +453,9 @@ ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offse
 				errno = EIO;
 				return -1;
 			}
+
+			// We increment the number of datablocks allocated for the file
+			inod.num_allocated_blocks++;
 		}
 		else {
 			if (bread(current_block_number, &db) == -1) {
@@ -470,13 +470,10 @@ ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offse
 			return -1;
 		}
 		written_bytes += bytes_to_be_copied;
-
 		current_offset_in_block = (current_offset_in_block + bytes_to_be_copied) % BLOCK_SIZE;
-
 		remaining_bytes -= bytes_to_be_copied;
 
 		if (current_offset_in_block == 0) {
-			// current_offset_in_block = 0;
 			block_num_pos++;
 			current_block_number = get_ith_datablock_number(&inod, block_num_pos);
 		}
