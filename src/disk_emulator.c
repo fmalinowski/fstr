@@ -145,7 +145,7 @@ int write_block(big_int block_id, void * buffer, size_t buffer_size) {
 
 	if(buffer_size < BLOCK_SIZE) {
 		char data[BLOCK_SIZE];
-		memcpy(data, buffer, buffer_size);tan
+		memcpy(data, buffer, buffer_size);
 		memset(data + buffer_size, 0, BLOCK_SIZE - buffer_size);
 		buffer = data;
 	}
