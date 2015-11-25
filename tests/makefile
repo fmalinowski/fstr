@@ -11,7 +11,7 @@ CFLAGS += -Wpointer-arith
 CFLAGS += -Wcast-align
 CFLAGS += -Wwrite-strings
 CFLAGS += -Wswitch-default
-CFLAGS += -Wunreachable-code
+# CFLAGS += -Wunreachable-code
 CFLAGS += -Winit-self
 CFLAGS += -Wmissing-field-initializers
 CFLAGS += -Wno-unknown-pragmas
@@ -37,13 +37,10 @@ SRC_FILES_USED_IN_TESTS = ../src/disk_emulator.c ../src/data_blocks_handler.c ..
 all: clean tests
 
 tests:
-	cd ../src && sudo make mkfs
-	cd ../bin && sudo ./mkfs
 	mkdir -p $(BIN_DIR)
 	$(CC) $(CFLAGS) $(C_FSTR_TESTFLAGS) $(INCLUDES) $(SRC_FILES_USED_IN_TESTS) $(TESTS) -o $(BIN_DIR)/tests
 	$(BIN_DIR)/tests -v
 
 clean:
 	rm -rf $(BIN_DIR)/
-	sudo rm -rf /dev/FSTR_DEV
 	

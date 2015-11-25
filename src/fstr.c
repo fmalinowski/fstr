@@ -1,4 +1,5 @@
 #include "common.h"
+#include "mkfs.h"
 #include "disk_emulator.h"
 #include "syscalls1.h"
 #include "syscalls2.h"
@@ -144,6 +145,11 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    if (create_fs() == -1) {
+        fprintf(stderr, "Failed to create fs\n");
+        return -1;
+    }
+    
     if(init_superblock() == -1) {
         fprintf(stderr, "Failed to init superblock\n");
         return -1;

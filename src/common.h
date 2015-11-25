@@ -19,7 +19,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#define DISK_STORE_PATH "/dev/FSTR_DEV"
+#define DISK_STORE_PATH "/dev/vdc"
 
 // #define DEBUG
 #ifdef DEBUG
