@@ -399,6 +399,12 @@ ssize_t syscalls2__pread(int fildes, void *buf, size_t nbyte, off_t offset) {
 	}
 
 	fde->byte_offset = offset + read_bytes;
+
+	inod.last_accessed_file = time(NULL);
+	if (put_inode(&inod) == -1) {
+		errno = EIO;
+		return -1;
+	}
 	return read_bytes;
 }
 
@@ -494,7 +500,7 @@ ssize_t syscalls2__pwrite(int fildes, const void *buf, size_t nbyte, off_t offse
 
 	inod.last_modified_file = time(NULL);
 	
-	if (put_inode(&inod)) {
+	if (put_inode(&inod) == -1) {
 		errno = EIO;
 		return -1;
 	}
