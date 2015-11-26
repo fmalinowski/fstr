@@ -201,18 +201,18 @@ TEST(TestDataBlocksHandler, data_block_alloc__allocates_correctly_a_datablock) {
 	read_block(pointer_next_free_datablock_list, free_block_buffer); // We want to check whether the block got cleared on disk
 	TEST_ASSERT_EQUAL(0, free_block_buffer[0]); // Assert that block got cleared
 	TEST_ASSERT_EQUAL(0, free_block_buffer[1]);
-	TEST_ASSERT_EQUAL(557, superblock.num_free_blocks);
+	TEST_ASSERT_EQUAL(558, superblock.num_free_blocks); // We don't decrease the value because it was a block containing numbers
 
 	data_block_alloc(&result_datablock);
 	TEST_ASSERT_EQUAL(first_free_datablock_number_in_second_list, result_datablock.data_block_id);
 	read_block(first_free_datablock_number_in_second_list, free_block_buffer); // We want to check whether the block got cleared on disk
 	TEST_ASSERT_EQUAL(0, free_block_buffer[0]); // Assert that block got cleared
 	TEST_ASSERT_EQUAL(0, free_block_buffer[1]);
-	TEST_ASSERT_EQUAL(556, superblock.num_free_blocks);
+	TEST_ASSERT_EQUAL(557, superblock.num_free_blocks);
 
 	// At this point we have no more free block numbers stored so we should get -1
 	TEST_ASSERT_EQUAL(-1, data_block_alloc(&result_datablock));
-	TEST_ASSERT_EQUAL(556, superblock.num_free_blocks);
+	TEST_ASSERT_EQUAL(557, superblock.num_free_blocks);
 
 	free_disk_emulator();
 }

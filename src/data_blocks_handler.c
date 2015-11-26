@@ -86,13 +86,9 @@ big_int get_first_free_datablock_starting_from_end_of_block_and_set_0(char * dat
 }
 
 int data_block_alloc(struct data_block *datablock) {
-
 	int position_of_first_datablock;
 	big_int free_block_number_to_be_used;
 	char read_buffer[BLOCK_SIZE];
-	
-	// We don't implement lock here for superblock !
-
 	
 	// 	We get 1st datablock. That's also the block that contains the id of the free data blocks and 
 	// 	the pointer to the next data block containing other part of free data block numbers!
@@ -105,7 +101,16 @@ int data_block_alloc(struct data_block *datablock) {
 		return -1;
 	}
 
-	if (has_at_least_one_datablock_number_left_without_pointer(read_buffer) == 0) {
+	if (has_at_least_one_datablock_number_left_without_pointer(read_buffer) == 1) {
+		
+		free_block_number_to_be_used = get_first_free_datablock_starting_from_end_of_block_and_set_0(read_buffer);
+		if (write_block(position_of_first_datablock, read_buffer, BLOCK_SIZE) == -1) {
+			return -1;
+		}
+
+		superblock.num_free_blocks--; // Decrement the number of free data blocks
+	}
+	else {
 		// No block numbers left, we copy content of datablock pointed by current block into current block
 
 		// We check if there's a block pointed by current block. If not, we return an error (NULL)
@@ -126,18 +131,15 @@ int data_block_alloc(struct data_block *datablock) {
 		// The block that was pointed by 1st data block will be used as the free data block
 		free_block_number_to_be_used = next_block_number;
 	}
-	else {
-		free_block_number_to_be_used = get_first_free_datablock_starting_from_end_of_block_and_set_0(read_buffer);
-		write_block(position_of_first_datablock, read_buffer, BLOCK_SIZE);
-	}
 
 	datablock->data_block_id = free_block_number_to_be_used;
 	memset(datablock->block, 0, BLOCK_SIZE); // set 0s to the buffer
-	write_block(free_block_number_to_be_used, datablock->block, BLOCK_SIZE); // Set 0s the block on disk too
+	if (write_block(free_block_number_to_be_used, datablock->block, BLOCK_SIZE) == -1) {
+		// Set 0s the block on disk too
+		return -1;
+	}
 
-	superblock.num_free_blocks--; // Decrement the number of free data blocks
 	commit_superblock();
-
 	return 0;
 }
 
