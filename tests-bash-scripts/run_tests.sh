@@ -9,7 +9,6 @@ bash_tests_path=$(pwd)
 # Compile FSTR and MKFS
 cd $MAKE_FOLDER_OF_FSTR
 sudo make
-sudo make mkfs
 
 echo
 echo
@@ -23,7 +22,6 @@ for filename in $test_files
 do
 	# MKFS
 	cd $BIN_FOLDER_OF_FSTR
-	sudo ./mkfs &> /dev/null
 
 	# Create the mount point
 	sudo fusermount -u $MOUNT_POINT &> /dev/null

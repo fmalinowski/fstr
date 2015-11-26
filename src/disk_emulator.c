@@ -70,7 +70,7 @@ int disk_created = -1;
 int init_disk_emulator(void) { 
 	
 	if(disk_created == -1){
-		disk_store = open(DISK_STORE_PATH, O_RDWR);
+		disk_store = open(DISK_STORE_PATH, O_CREAT|O_RDWR);
 		if (disk_store == -1){
     		fprintf(stderr, "Error opening disk store\n");
     		errno = ENODEV;
