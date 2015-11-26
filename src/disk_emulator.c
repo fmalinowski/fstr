@@ -121,7 +121,7 @@ int read_block(big_int block_id, void * target) {
 	}
 
 	if((big_int) read_bytes != BLOCK_SIZE) {
-		fprintf(stderr, "read returned less than expected bytes (%" PRId64 ")\n", read_bytes);
+		LOGD("read returned less than expected bytes: %" PRId64, read_bytes);
 	}
 	return 0;
 }
