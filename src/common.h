@@ -31,7 +31,7 @@
 #define FREE_BLOCKS_CACHE_SIZE 0
 #define FREE_INODES_CACHE_SIZE 0
 
-#define FS_SIZE ((big_int) 4 * 1024 * 1024 * 1024) // 4GB
+#define FS_SIZE ((big_int) 30 * 1024 * 1024 * 1024) // 30GB
 #define BLOCK_SIZE 4096 // 4KB
 #define INODE_SIZE 256
 #define NUM_INODES ((int) (0.1 * NUM_BLOCKS))
