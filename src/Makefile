@@ -2,7 +2,7 @@
 CC = gcc -Wall
 
 # define global compile-time flags
-CFLAGS = -g `pkg-config fuse --cflags --libs`
+CFLAGS = `pkg-config fuse --cflags --libs`
 
 # define sources
 FSTR_SRCS = fstr.c mkfs.c common.c block_utils.c disk_emulator.c data_blocks_handler.c inodes_handler.c inode_table.c namei.c syscalls1.c syscalls2.c
