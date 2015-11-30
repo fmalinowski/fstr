@@ -1,0 +1,24 @@
+*Bonnie Benchmarks*
+
+1. Linux- ext4
+
+              -------Sequential Output-------- ---Sequential Input-- --Random--
+              -Per Char- --Block--- -Rewrite-- -Per Char- --Block--- --Seeks---
+Machine    GB M/sec %CPU M/sec %CPU M/sec %CPU M/sec %CPU M/sec %CPU  /sec %CPU
+            0 118.9 79.4 555.3 28.3 520.1 28.6 143.7 93.0 2285.7 41.1 66916 36.8
+
+
+2. FSTR- without inode table cache
+
+              -------Sequential Output-------- ---Sequential Input-- --Random--
+              -Per Char- --Block--- -Rewrite-- -Per Char- --Block--- --Seeks---
+Machine    GB M/sec %CPU M/sec %CPU M/sec %CPU M/sec %CPU M/sec %CPU  /sec %CPU
+            0  95.9 63.6 233.2 12.6 240.1 13.7 142.0 90.9 1268.5 20.3 17601 11.0
+
+
+3. FSTR- with inode table cache
+
+              -------Sequential Output-------- ---Sequential Input-- --Random--
+              -Per Char- --Block--- -Rewrite-- -Per Char- --Block--- --Seeks---
+Machine    GB M/sec %CPU M/sec %CPU M/sec %CPU M/sec %CPU M/sec %CPU  /sec %CPU
+            0  96.5 63.9 250.4 13.5 227.5 13.4 142.5 91.0 1304.0 22.2 40965 24.6
