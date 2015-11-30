@@ -311,7 +311,7 @@ int set_ith_datablock_number(struct inode * inod, big_int ith_block, big_int blo
 		inod->num_blocks = ith_block;
 		inod->num_used_bytes_in_last_block = 0;
 	}
-	put_inode(inod);
+	// put_inode(inod);
 	return 0;
 }
 
