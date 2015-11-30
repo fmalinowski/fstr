@@ -651,14 +651,14 @@ TEST(TestSyscalls2, get_ith_datablock_number) {
 
 TEST(TestSyscalls2, set_ith_datablock_number) {
 	big_int i;
-	int inode_number;
+	// int inode_number;
 
 	init_disk_emulator();
 	create_fs();
 
 	struct inode inod;
 	ialloc(&inod);
-	inode_number = inod.inode_id;
+	// inode_number = inod.inode_id;
 
 	/* *******
 		TEST OF DIRECT BLOCKS
