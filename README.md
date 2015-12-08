@@ -9,7 +9,7 @@ This project could be definitely extended to support more features but the file 
 FSTR has been tested with a volume of 30GB.
 A small presentation of our File System is available in the slides.
 
-### How to set up the environment to use our File System?
+## How to set up the environment to use our File System?
 
 You will need mainly the GCC compiler and the FUSE library.
 On a CentOS 6.4 image, you can set up the environment with the following command:
@@ -22,7 +22,7 @@ sudo apt-get install libfuse-dev
 ```
 
 
-### How to configure the space needed by the File System and the location of the volume?
+## How to configure the space needed by the File System and the location of the volume?
 
 By default, FSTR assumes that the volume will be 30GB.
 To change that value, you can open the common.h file in the src folder and modify the constant ``FS_SIZE`` to be the size of your volume (size in Bytes). For instance if your volume has 8GB, you will define the constant as follows: ``#define FS_SIZE ((big_int) 8 * 1024 * 1024 * 1024)``.
@@ -30,7 +30,7 @@ To change that value, you can open the common.h file in the src folder and modif
 FSTR assumes that the attached volume will be at ``/dev/vdc``. This value can be changed by setting the correct path in the constant ``DISK_STORE_PATH`` of the file ``common.h``.
 
 
-### How to compile the File System?
+## How to compile the File System?
 
 Different makefiles are present at different levels in this project.
 There's a makefile in the src folder that compiles only the source files and produces a binary called ``fstr`` in the bin folder.
@@ -42,7 +42,7 @@ In order to run FSTR, you can either run the ``sudo make`` command at the top le
 
 **Please note that you need to be root to compile the project and to execute FSTR, hence the ``sudo``!**
 
-### How to run FSTR?
+## How to run FSTR?
 
 After having compiled the project with one of the makefiles, you will get the ``fstr`` binary in the bin folder.
 You need to create a folder somewhere on your system that will be the mount point.
