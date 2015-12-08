@@ -3,7 +3,7 @@
 
 
 FSTR is a user space filesystem that uses the [FUSE library](http://fuse.sourceforge.net/).
-It has been developed in the C language by Tanuj Mittal, Aviral Takkar and Francois Malinowski as part of the Graduate class CS270 (Operating Systems) project at UCSB. The CS270 class was taught by Professor Rich Wolski.
+It has been developed in the C language by Tanuj Mittal, Aviral Takkar and Francois Malinowski as part of the Graduate class CS270 (Operating Systems) project at the University of California, Santa Barbara. The CS270 class was taught by Professor Rich Wolski.
 
 This project could be definitely extended to support more features but the file system in its current state is working and can support thousands of files and creation/copy/removal of files that have sizes greater than 2GB.
 FSTR has been tested with a volume of 30GB.
