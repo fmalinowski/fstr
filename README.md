@@ -1,4 +1,4 @@
-# FSTR ![](https://magnum.travis-ci.com/fmalinowski/fstr.svg?token=vCQTxKRqTuz4r6h4qxQX&branch=master)
+# FSTR
 **File System That Rocks**
 
 
